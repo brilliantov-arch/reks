@@ -2,1523 +2,737 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🍕 PizzaCraft — Собери свою пиццу</title>
-<link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ПРОКАЧАЙ НОСТАЛЬГИЮ</title>
+<link href="https://fonts.googleapis.com/css2?family=Russo+One&family=Oswald:wght@400;700&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --crust: #e8a96a;
-    --sauce: #d94f2c;
-    --cheese: #f5c842;
-    --bg: #fdf6ec;
-    --dark: #2d1a0e;
-    --card: #fff8ee;
-    --accent: #ff6b35;
-    --green: #4caf50;
-    --shadow: 0 8px 32px rgba(45,26,14,0.13);
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    font-family: 'Nunito', sans-serif;
-    background: var(--bg);
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-
-  /* Floating bg bubbles */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background:
-      radial-gradient(circle at 10% 20%, #ffe4c4 0%, transparent 40%),
-      radial-gradient(circle at 90% 80%, #ffd1b3 0%, transparent 40%),
-      radial-gradient(circle at 50% 50%, #fff3dc 0%, transparent 60%);
-    z-index: 0;
-    pointer-events: none;
-  }
-
-  .container {
-    position: relative;
-    z-index: 1;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
-  }
-
-  header {
-    text-align: center;
-    padding: 40px 0 30px;
-  }
-
-  header h1 {
-    font-family: 'Pacifico', cursive;
-    font-size: clamp(2.5rem, 6vw, 4.5rem);
-    color: var(--sauce);
-    text-shadow: 4px 4px 0 #f5c842, 6px 6px 0 rgba(0,0,0,0.1);
-    line-height: 1.1;
-  }
-
-  header p {
-    font-size: 1.15rem;
-    color: #7a5c3a;
-    margin-top: 8px;
-    font-weight: 600;
-  }
-
-  .main-layout {
-    display: grid;
-    grid-template-columns: 1fr 380px;
-    gap: 30px;
-    align-items: start;
-    margin-top: 20px;
-  }
-
-  /* ---- PIZZA CANVAS ---- */
-  .pizza-section {
-    background: var(--card);
-    border-radius: 28px;
-    padding: 30px;
-    box-shadow: var(--shadow);
-    border: 3px solid #ffe5c0;
-    text-align: center;
-  }
-
-  .pizza-canvas-wrap {
-    position: relative;
-    width: 340px;
-    height: 340px;
-    margin: 0 auto 20px;
-  }
-
-  .pizza-canvas {
-    position: relative;
-    width: 340px;
-    height: 340px;
-    border-radius: 50%;
-    overflow: hidden;
-  }
-
-  /* Layers */
-  .layer {
-    position: absolute;
-    border-radius: 50%;
-    transition: opacity 0.4s, transform 0.4s;
-  }
-
-  #crust-layer {
-    inset: 0;
-    background: radial-gradient(circle at 30% 30%, #f0c580, #c8813a);
-    box-shadow: inset 0 0 40px rgba(0,0,0,0.15), inset 0 0 80px rgba(0,0,0,0.1);
-  }
-
-  /* Crust ring */
-  #crust-ring {
-    position: absolute;
-    inset: 0;
-    border-radius: 50%;
-    box-shadow: inset 0 0 0 28px #c8813a;
-    pointer-events: none;
-    z-index: 2;
-  }
-
-  #sauce-layer {
-    inset: 28px;
-    background: radial-gradient(circle at 35% 30%, #e8553a, #b52d10);
-    opacity: 0;
-    z-index: 3;
-    transition: opacity 0.5s;
-  }
-
-  #cheese-layer {
-    inset: 30px;
-    background: radial-gradient(circle at 40% 35%, #ffe97a, #f0c020);
-    opacity: 0;
-    z-index: 4;
-    transition: opacity 0.5s;
-  }
-
-  /* Toppings container */
-  #toppings-layer {
-    inset: 0;
-    z-index: 5;
-    pointer-events: none;
-  }
-
-  .topping-item {
-    position: absolute;
-    font-size: 1.6rem;
-    animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
-    user-select: none;
-    filter: drop-shadow(1px 2px 3px rgba(0,0,0,0.3));
-  }
-
-  @keyframes popIn {
-    from { transform: scale(0) rotate(-20deg); opacity: 0; }
-    to { transform: scale(1) rotate(0deg); opacity: 1; }
-  }
-
-  /* Crust size indicator */
-  .crust-options {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    margin-bottom: 16px;
-    flex-wrap: wrap;
-  }
-
-  .crust-btn {
-    padding: 8px 18px;
-    border-radius: 50px;
-    border: 2.5px solid #e8a96a;
-    background: white;
-    color: #7a5c3a;
-    font-family: 'Nunito', sans-serif;
-    font-weight: 700;
-    font-size: 0.88rem;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .crust-btn.active, .crust-btn:hover {
-    background: var(--crust);
-    color: white;
-    border-color: var(--crust);
-    transform: translateY(-2px);
-  }
-
-  .pizza-name-wrap {
-    margin-bottom: 16px;
-  }
-
-  .pizza-name-wrap label {
-    display: block;
-    font-weight: 800;
-    color: var(--dark);
-    margin-bottom: 6px;
-    font-size: 0.95rem;
-  }
-
-  .pizza-name-wrap input {
-    width: 100%;
-    max-width: 300px;
-    padding: 10px 16px;
-    border-radius: 50px;
-    border: 2.5px solid #ffe0b0;
-    font-family: 'Nunito', sans-serif;
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--dark);
-    background: white;
-    outline: none;
-    text-align: center;
-    transition: border-color 0.2s;
-  }
-
-  .pizza-name-wrap input:focus { border-color: var(--sauce); }
-
-  /* Price tag */
-  .price-tag {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    background: linear-gradient(135deg, var(--sauce), #ff8a50);
-    color: white;
-    padding: 10px 24px;
-    border-radius: 50px;
-    font-family: 'Pacifico', cursive;
-    font-size: 1.4rem;
-    box-shadow: 0 4px 16px rgba(217,79,44,0.3);
-    margin-bottom: 16px;
-  }
-
-  .action-btns {
-    display: flex;
-    gap: 12px;
-    justify-content: center;
-    flex-wrap: wrap;
-  }
-
-  .btn {
-    padding: 12px 24px;
-    border-radius: 50px;
-    border: none;
-    font-family: 'Nunito', sans-serif;
-    font-weight: 800;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .btn:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.15); }
-  .btn:active { transform: translateY(0); }
-
-  .btn-order {
-    background: linear-gradient(135deg, #4caf50, #2e7d32);
-    color: white;
-  }
-
-  .btn-reset {
-    background: white;
-    color: var(--sauce);
-    border: 2.5px solid var(--sauce);
-  }
-
-  .btn-save {
-    background: linear-gradient(135deg, var(--accent), #ff9800);
-    color: white;
-  }
-
-  /* ---- INGREDIENTS PANEL ---- */
-  .ingredients-panel {
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-  }
-
-  .category-card {
-    background: var(--card);
-    border-radius: 22px;
-    padding: 20px;
-    box-shadow: var(--shadow);
-    border: 3px solid #ffe5c0;
-  }
-
-  .category-title {
-    font-family: 'Pacifico', cursive;
-    font-size: 1.15rem;
-    color: var(--sauce);
-    margin-bottom: 14px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .ingredients-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-    gap: 10px;
-  }
-
-  .ingredient-btn {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    padding: 10px 6px;
-    border-radius: 16px;
-    border: 2.5px solid transparent;
-    background: white;
-    cursor: pointer;
-    transition: all 0.2s;
-    position: relative;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-  }
-
-  .ingredient-btn:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 16px rgba(0,0,0,0.12);
-    border-color: #ffe0b0;
-  }
-
-  .ingredient-btn.selected {
-    border-color: var(--green);
-    background: #f0fff0;
-  }
-
-  .ingredient-btn.selected::after {
-    content: '✓';
-    position: absolute;
-    top: -6px;
-    right: -6px;
-    width: 20px;
-    height: 20px;
-    background: var(--green);
-    color: white;
-    border-radius: 50%;
-    font-size: 0.7rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 900;
-  }
-
-  .ingredient-btn .emoji { font-size: 1.8rem; }
-  .ingredient-btn .name {
-    font-size: 0.72rem;
-    font-weight: 700;
-    color: #5a3e28;
-    text-align: center;
-    line-height: 1.2;
-  }
-  .ingredient-btn .price {
-    font-size: 0.7rem;
-    color: var(--sauce);
-    font-weight: 800;
-  }
-
-  /* Sauce buttons special */
-  .sauce-btn.selected { border-color: var(--sauce); background: #fff0ed; }
-  .sauce-btn.selected::after { background: var(--sauce); }
-
-  /* Counter badge on toppings */
-  .count-badge {
-    position: absolute;
-    top: -6px;
-    left: -6px;
-    width: 22px;
-    height: 22px;
-    background: var(--accent);
-    color: white;
-    border-radius: 50%;
-    font-size: 0.72rem;
-    font-weight: 900;
-    display: none;
-    align-items: center;
-    justify-content: center;
-  }
-
-  /* Recipe card */
-  .recipe-display {
-    background: linear-gradient(135deg, #fff8ee, #fff0d0);
-    border-radius: 18px;
-    padding: 16px;
-    border: 2px dashed #f0c080;
-    font-size: 0.9rem;
-    color: #5a3e28;
-    min-height: 60px;
-  }
-
-  .recipe-display .empty {
-    color: #b0956d;
-    font-style: italic;
-    text-align: center;
-  }
-
-  .recipe-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    background: white;
-    border-radius: 50px;
-    padding: 3px 10px;
-    margin: 3px;
-    font-weight: 700;
-    font-size: 0.82rem;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .recipe-chip:hover { background: #ffe4e4; }
-  .recipe-chip .remove { color: var(--sauce); font-weight: 900; }
-
-  /* ======================== COOKING ANIMATION ======================== */
-  .cooking-overlay {
-    position: fixed;
-    inset: 0;
-    background: #1a0a00;
-    z-index: 900;
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-  }
-  .cooking-overlay.show { display: flex; }
-
-  /* Kitchen background particles */
-  .kitchen-bg {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    overflow: hidden;
-  }
-  .spark {
-    position: absolute;
-    width: 4px;
-    height: 4px;
-    border-radius: 50%;
-    background: #ff9800;
-    animation: sparkFloat linear infinite;
-    opacity: 0;
-  }
-  @keyframes sparkFloat {
-    0% { transform: translateY(0) scale(1); opacity: 0.8; }
-    100% { transform: translateY(-200px) scale(0); opacity: 0; }
-  }
-
-  .cooking-title {
-    font-family: 'Pacifico', cursive;
-    font-size: clamp(1.6rem, 4vw, 2.8rem);
-    color: #ff9800;
-    text-shadow: 0 0 30px rgba(255,152,0,0.6);
-    margin-bottom: 10px;
-    position: relative;
-    z-index: 2;
-    text-align: center;
-  }
-
-  .cooking-stage-label {
-    font-family: 'Nunito', sans-serif;
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: #ffd580;
-    min-height: 32px;
-    margin-bottom: 30px;
-    position: relative;
-    z-index: 2;
-    text-align: center;
-    transition: opacity 0.3s;
-  }
-
-  /* Big pizza on cooking screen */
-  .cooking-pizza-wrap {
-    position: relative;
-    width: 320px;
-    height: 320px;
-    margin-bottom: 30px;
-    z-index: 2;
-  }
-
-  .cooking-pizza {
-    width: 320px;
-    height: 320px;
-    border-radius: 50%;
-    position: relative;
-    overflow: hidden;
-    box-shadow: 0 0 60px rgba(255,150,0,0.4), 0 0 120px rgba(255,80,0,0.2);
-  }
-
-  .cook-layer {
-    position: absolute;
-    border-radius: 50%;
-    transition: opacity 0.6s ease;
-  }
-
-  #cook-crust {
-    inset: 0;
-    background: radial-gradient(circle at 30% 30%, #f0c580, #c8813a);
-    box-shadow: inset 0 0 40px rgba(0,0,0,0.2);
-  }
-  #cook-crust-ring {
-    position: absolute;
-    inset: 0;
-    border-radius: 50%;
-    box-shadow: inset 0 0 0 28px #a86030;
-    z-index: 2;
-    pointer-events: none;
-  }
-  #cook-sauce { inset: 28px; z-index: 3; opacity: 0; }
-  #cook-cheese { inset: 30px; z-index: 4; opacity: 0; }
-  #cook-toppings { inset: 0; z-index: 5; pointer-events: none; }
-
-  /* Ingredient flying in animation */
-  .fly-ingredient {
-    position: absolute;
-    font-size: 3rem;
-    z-index: 10;
-    pointer-events: none;
-    filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5));
-    animation: flyIn 0.7s cubic-bezier(0.22,1,0.36,1) forwards;
-  }
-
-  @keyframes flyIn {
-    0% { transform: scale(2) translateY(-80px) rotate(-30deg); opacity: 0; }
-    60% { transform: scale(1.2) translateY(10px) rotate(5deg); opacity: 1; }
-    100% { transform: scale(1) translateY(0) rotate(0deg); opacity: 1; }
-  }
-
-  /* Splash ripple when ingredient lands */
-  .splash {
-    position: absolute;
-    border-radius: 50%;
-    background: rgba(255,200,80,0.35);
-    transform: scale(0);
-    animation: splashAnim 0.5s ease-out forwards;
-    pointer-events: none;
-    z-index: 6;
-  }
-  @keyframes splashAnim {
-    0% { transform: scale(0); opacity: 1; }
-    100% { transform: scale(3); opacity: 0; }
-  }
-
-  /* Oven glow pulse */
-  .oven-glow {
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 400px;
-    height: 180px;
-    background: radial-gradient(ellipse at center bottom, rgba(255,100,0,0.5) 0%, transparent 70%);
-    animation: ovenPulse 1.5s ease-in-out infinite;
-    pointer-events: none;
-    z-index: 1;
-  }
-  @keyframes ovenPulse {
-    0%, 100% { opacity: 0.6; transform: translateX(-50%) scaleX(1); }
-    50% { opacity: 1; transform: translateX(-50%) scaleX(1.15); }
-  }
-
-  /* Smoke puffs */
-  .smoke {
-    position: absolute;
-    border-radius: 50%;
-    background: rgba(255,200,100,0.15);
-    animation: smokePuff 2s ease-out infinite;
-    pointer-events: none;
-    z-index: 1;
-  }
-  @keyframes smokePuff {
-    0% { transform: translateY(0) scale(0.5); opacity: 0.6; }
-    100% { transform: translateY(-120px) scale(2); opacity: 0; }
-  }
-
-  /* Progress bar */
-  .cook-progress-wrap {
-    width: 320px;
-    height: 10px;
-    background: rgba(255,255,255,0.1);
-    border-radius: 50px;
-    overflow: hidden;
-    position: relative;
-    z-index: 2;
-    margin-bottom: 20px;
-  }
-  .cook-progress-bar {
-    height: 100%;
-    background: linear-gradient(90deg, #ff6b00, #ffcc00);
-    border-radius: 50px;
-    transition: width 0.5s ease;
-    box-shadow: 0 0 12px rgba(255,150,0,0.6);
-    width: 0%;
-  }
-
-  /* Baking phase */
-  .baking-phase {
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    position: relative;
-    z-index: 2;
-  }
-  .baking-phase.active { display: flex; }
-
-  .oven-emoji {
-    font-size: 6rem;
-    animation: ovenShake 0.3s ease-in-out infinite;
-    margin-bottom: 16px;
-  }
-  @keyframes ovenShake {
-    0%, 100% { transform: rotate(-2deg); }
-    50% { transform: rotate(2deg); }
-  }
-
-  .bake-bar-wrap {
-    width: 280px;
-    height: 24px;
-    background: rgba(255,255,255,0.1);
-    border-radius: 50px;
-    overflow: hidden;
-    border: 2px solid rgba(255,150,0,0.4);
-  }
-  .bake-bar {
-    height: 100%;
-    background: linear-gradient(90deg, #ff4500, #ff9800, #ffd700);
-    border-radius: 50px;
-    width: 0%;
-    transition: width 0.1s linear;
-    box-shadow: 0 0 16px rgba(255,100,0,0.8);
-  }
-
-  .bake-text {
-    margin-top: 10px;
-    font-family: 'Nunito', sans-serif;
-    font-weight: 800;
-    color: #ffd580;
-    font-size: 1rem;
-  }
-
-  /* Final reveal */
-  .final-reveal {
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    position: relative;
-    z-index: 2;
-    text-align: center;
-  }
-  .final-reveal.active { display: flex; }
-
-  .final-pizza {
-    font-size: 9rem;
-    animation: finalBounce 0.6s cubic-bezier(0.34,1.56,0.64,1);
-    margin-bottom: 16px;
-    filter: drop-shadow(0 8px 24px rgba(255,120,0,0.5));
-  }
-  @keyframes finalBounce {
-    0% { transform: scale(0) rotate(-20deg); }
-    100% { transform: scale(1) rotate(0deg); }
-  }
-
-  .final-title {
-    font-family: 'Pacifico', cursive;
-    font-size: 2.2rem;
-    color: #ffd700;
-    text-shadow: 0 0 20px rgba(255,200,0,0.7);
-    margin-bottom: 8px;
-  }
-  .final-subtitle {
-    color: #ffb74d;
-    font-weight: 700;
-    font-size: 1rem;
-    margin-bottom: 24px;
-  }
-  .confetti-piece {
-    position: absolute;
-    width: 10px;
-    height: 10px;
-    border-radius: 2px;
-    animation: confettiFall linear forwards;
-    pointer-events: none;
-  }
-  @keyframes confettiFall {
-    0% { transform: translateY(-50px) rotate(0deg); opacity: 1; }
-    100% { transform: translateY(300px) rotate(720deg); opacity: 0; }
-  }
-
-  /* Toast notification */
-  .toast {
-    position: fixed;
-    bottom: 30px;
-    left: 50%;
-    transform: translateX(-50%) translateY(100px);
-    background: var(--dark);
-    color: white;
-    padding: 14px 28px;
-    border-radius: 50px;
-    font-family: 'Nunito', sans-serif;
-    font-weight: 700;
-    font-size: 1rem;
-    z-index: 1000;
-    transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
-    box-shadow: 0 8px 30px rgba(0,0,0,0.3);
-    white-space: nowrap;
-  }
-
-  .toast.show { transform: translateX(-50%) translateY(0); }
-
-  /* Order modal */
-  .modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.5);
-    backdrop-filter: blur(4px);
-    z-index: 500;
-    display: none;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .modal-overlay.show { display: flex; }
-
-  .modal {
-    background: var(--card);
-    border-radius: 28px;
-    padding: 40px 36px;
-    max-width: 420px;
-    width: 90%;
-    text-align: center;
-    animation: modalIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
-    border: 3px solid #ffe0b0;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
-  }
-
-  @keyframes modalIn {
-    from { transform: scale(0.7); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
-  }
-
-  .modal h2 {
-    font-family: 'Pacifico', cursive;
-    color: var(--sauce);
-    font-size: 2rem;
-    margin-bottom: 12px;
-  }
-
-  .modal p {
-    color: #7a5c3a;
-    font-size: 1rem;
-    margin-bottom: 8px;
-    font-weight: 600;
-  }
-
-  .modal-pizza-emoji {
-    font-size: 5rem;
-    animation: spin 2s linear infinite;
-    display: block;
-    margin: 20px 0;
-  }
-
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-
-  .modal .btn { margin-top: 20px; }
-
-  /* Responsive */
-  @media (max-width: 768px) {
-    .main-layout {
-      grid-template-columns: 1fr;
-    }
-    .pizza-canvas-wrap, .pizza-canvas {
-      width: 280px;
-      height: 280px;
-    }
-  }
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+:root {
+  --yellow: #ffd700;
+  --green: #00e600;
+  --orange: #ff6b00;
+  --purple: #7b2fbf;
+  --dark-purple: #3a1060;
+  --bg: linear-gradient(160deg, #ff2d9b 0%, #cc00aa 45%, #7b2fbf 100%);
+  --panel: rgba(40,8,80,0.78);
+}
+
+html, body {
+  height: 100%;
+  font-family: 'Russo One', sans-serif;
+  background: var(--bg);
+  background-attachment: fixed;
+  overflow-x: hidden;
+  color: white;
+}
+
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: radial-gradient(circle, rgba(255,255,255,.07) 1.5px, transparent 1.5px);
+  background-size: 28px 28px;
+  pointer-events: none; z-index: 0;
+}
+
+/* ─── SHELL ─── */
+.shell {
+  position: relative; z-index: 1;
+  max-width: 960px; margin: 0 auto;
+  min-height: 100dvh;
+  display: flex; flex-direction: column;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+/* ─── TOP BAR ─── */
+.topbar {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 10px;
+  background: rgba(0,0,0,.25);
+  border-bottom: 2px solid rgba(255,215,0,.2);
+  flex-shrink: 0;
+}
+
+.player-card {
+  display: flex; align-items: center; gap: 6px;
+  background: rgba(0,0,0,.3); border: 2px solid var(--yellow);
+  border-radius: 12px; padding: 4px 8px;
+}
+
+.avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  border: 2px solid var(--yellow);
+  background: linear-gradient(135deg,#333,#666);
+  font-size: 20px; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.score-badge {
+  background: var(--yellow); color: #000;
+  font-size: clamp(11px,3.4vw,17px); font-weight: 900;
+  padding: 2px 10px; border-radius: 20px; white-space: nowrap;
+}
+
+.rank {
+  color: rgba(255,255,255,.65); font-size: clamp(8px,2vw,10px);
+  margin-top: 2px; font-family: 'Oswald',sans-serif; white-space: nowrap;
+}
+
+.title-logo { flex: 1; text-align: center; min-width: 0; padding: 0 4px; }
+
+.title-logo .sub {
+  font-family: 'Oswald',sans-serif; color: rgba(255,255,255,.65);
+  font-size: clamp(7px,1.8vw,10px); letter-spacing: 3px; display: block;
+}
+
+.title-logo .main {
+  font-size: clamp(12px,3.2vw,22px);
+  text-shadow: 2px 2px 0 #7b2fbf, -1px -1px 0 rgba(0,0,0,.4);
+  line-height: 1.1; white-space: nowrap;
+}
+.title-logo .main span { color: var(--yellow); }
+
+.coins-block {
+  display: flex; align-items: center; gap: 4px;
+  background: rgba(0,0,0,.3); border: 2px solid var(--yellow);
+  border-radius: 12px; padding: 4px 8px; flex-shrink: 0;
+}
+
+.coin-icon { font-size: 18px; }
+.coin-count { font-size: clamp(13px,3.4vw,17px); font-weight: 900; min-width: 26px; }
+
+.add-btn {
+  background: var(--green); border: none; border-radius: 50%;
+  width: 28px; height: 28px; font-size: 18px; font-weight: 900;
+  cursor: pointer; color: white;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform .1s; flex-shrink: 0;
+}
+.add-btn:active { transform: scale(.88); }
+
+.promo-badge {
+  background: linear-gradient(135deg,#ff2200,#ff6600);
+  color: white; font-size: 10px; padding: 2px 6px;
+  border-radius: 20px; border: 1.5px solid var(--yellow);
+  white-space: nowrap; flex-shrink: 0;
+}
+
+/* ─── CONTENT GRID ─── */
+.content-area {
+  flex: 1; display: grid;
+  grid-template-columns: 1fr 310px;
+  gap: 10px; padding: 10px;
+  align-items: start;
+  overflow-y: auto;
+}
+
+/* ─── CLICKER COLUMN ─── */
+.clicker-col {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 10px; padding-bottom: 10px;
+}
+
+.star-score {
+  display: flex; align-items: center; gap: 8px;
+  font-size: clamp(28px,6vw,48px); font-weight: 900;
+  text-shadow: 3px 3px 0 rgba(0,0,0,.35);
+}
+
+.star-icon { filter: drop-shadow(0 0 8px gold); }
+
+.per-sec {
+  font-family: 'Oswald',sans-serif;
+  font-size: clamp(13px,3vw,16px);
+  color: rgba(255,255,255,.85); letter-spacing: 1px;
+}
+.per-sec span { color: var(--green); font-size: 1.25em; font-weight: 700; }
+
+.clicker-ring {
+  width: clamp(190px,50vw,300px); height: clamp(190px,50vw,300px);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ffeb80 0%,#ffa500 40%,#ff6600 70%,#cc3300 100%);
+  box-shadow: 0 0 0 6px rgba(255,165,0,.3), 0 0 0 14px rgba(255,165,0,.14),
+              0 0 55px rgba(255,100,0,.5), inset 0 -15px 35px rgba(0,0,0,.2);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+  transition: transform .08s;
+  animation: ring-pulse 3s ease-in-out infinite;
+  touch-action: manipulation;
+}
+
+@keyframes ring-pulse {
+  0%,100% { box-shadow: 0 0 0 6px rgba(255,165,0,.3),0 0 0 14px rgba(255,165,0,.14),0 0 55px rgba(255,100,0,.5),inset 0 -15px 35px rgba(0,0,0,.2); }
+  50%      { box-shadow: 0 0 0 10px rgba(255,165,0,.4),0 0 0 22px rgba(255,165,0,.2),0 0 75px rgba(255,100,0,.7),inset 0 -15px 35px rgba(0,0,0,.2); }
+}
+
+.clicker-ring:active { transform: scale(.91); }
+
+.sneaker {
+  font-size: clamp(70px,18vw,120px);
+  filter: drop-shadow(0 8px 16px rgba(0,0,0,.4));
+  pointer-events: none;
+}
+
+.progress-wrap {
+  width: min(90%,300px);
+  background: rgba(0,0,0,.3); border-radius: 10px;
+  height: 14px; border: 2px solid rgba(255,255,255,.25); overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg,var(--yellow),var(--orange));
+  border-radius: 8px; transition: width .3s ease;
+}
+
+.level-info {
+  font-family: 'Oswald',sans-serif; color: rgba(255,255,255,.6);
+  font-size: clamp(11px,2.5vw,13px); text-align: center; padding: 0 10px;
+}
+
+.upgrade-btn {
+  background: linear-gradient(180deg,#ffd700,#ff9000);
+  color: #000; border: none; border-radius: 14px;
+  padding: 13px 28px;
+  font-family: 'Russo One',sans-serif;
+  font-size: clamp(14px,3.5vw,18px);
+  cursor: pointer; text-transform: uppercase; letter-spacing: .5px;
+  box-shadow: 0 5px 0 #aa5500, 0 7px 18px rgba(0,0,0,.3);
+  transition: all .1s; width: min(88%,300px);
+  touch-action: manipulation;
+}
+.upgrade-btn:hover  { filter: brightness(1.08); }
+.upgrade-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #aa5500; }
+.upgrade-btn:disabled {
+  background: linear-gradient(180deg,#888,#555);
+  color: #333; box-shadow: 0 4px 0 #333; cursor: not-allowed;
+}
+
+.obj-stars {
+  font-family: 'Oswald',sans-serif;
+  font-size: clamp(13px,3vw,15px); color: rgba(255,255,255,.8);
+}
+
+/* click particle */
+.click-particle {
+  position: fixed;
+  font-family: 'Russo One',sans-serif; font-size: 22px; font-weight: 900;
+  color: var(--yellow); text-shadow: 2px 2px 0 #000;
+  pointer-events: none;
+  animation: flyup .8s ease-out forwards;
+  z-index: 9999; transform: translateX(-50%);
+}
+@keyframes flyup {
+  from { opacity:1; transform:translateX(-50%) translateY(0) scale(1); }
+  to   { opacity:0; transform:translateX(-50%) translateY(-72px) scale(1.4); }
+}
+
+/* ─── RIGHT PANEL ─── */
+.right-panel {
+  background: var(--panel);
+  border: 3px solid rgba(255,215,0,.35);
+  border-radius: 20px; overflow: hidden;
+  backdrop-filter: blur(8px);
+}
+
+.panel-duck-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px; background: rgba(0,0,0,.2);
+}
+
+.duck-av {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: linear-gradient(135deg,#ffd700,#ff9000);
+  border: 2.5px solid var(--yellow);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; flex-shrink: 0;
+}
+
+.panel-title {
+  font-size: clamp(14px,3.5vw,18px); color: var(--yellow);
+  text-shadow: 2px 2px 0 rgba(0,0,0,.35);
+}
+
+.boosters-row {
+  display: flex; gap: 8px; padding: 8px 12px 12px; flex-wrap: wrap;
+}
+
+.booster-item {
+  display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer;
+}
+
+.booster-btn {
+  width: 52px; height: 52px; border-radius: 12px;
+  border: 2.5px solid rgba(255,255,255,.3);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; cursor: pointer;
+  transition: transform .12s; touch-action: manipulation;
+}
+.booster-btn:active { transform: scale(.86); }
+.booster-btn.blue { background: linear-gradient(135deg,#2255ff,#0088ff); }
+.booster-btn.red  { background: linear-gradient(135deg,#cc2200,#ff5500); }
+.booster-btn.teal { background: linear-gradient(135deg,#007755,#00cc88); }
+.booster-btn.grn  { background: linear-gradient(135deg,#448800,#88dd00); }
+
+.booster-label {
+  font-family: 'Oswald',sans-serif; font-size: 9px;
+  color: rgba(255,255,255,.75); text-align: center; max-width: 56px;
+}
+.booster-label.gold { color: var(--yellow); }
+
+.section-head {
+  font-size: clamp(14px,3.5vw,18px); color: var(--yellow);
+  padding: 8px 14px 4px;
+  text-shadow: 2px 2px 0 rgba(0,0,0,.35);
+  border-top: 2px solid rgba(255,255,255,.1);
+}
+
+.generators { padding-bottom: 6px; }
+
+.gen-item {
+  display: flex; align-items: center; gap: 8px;
+  margin: 5px 8px; background: rgba(255,255,255,.06);
+  border-radius: 12px; padding: 8px 10px;
+  cursor: pointer; border: 2px solid transparent;
+  transition: background .15s, border-color .15s;
+  touch-action: manipulation;
+}
+.gen-item:active:not(.locked) { background: rgba(255,255,255,.16); border-color: rgba(255,215,0,.5); }
+.gen-item.locked { opacity: .46; cursor: not-allowed; }
+
+.gen-icon {
+  width: 42px; height: 42px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; flex-shrink: 0;
+}
+.gen-icon.y  { background: linear-gradient(135deg,#ffd700,#ff9000); }
+.gen-icon.lk { background: linear-gradient(135deg,#553399,#7744bb); }
+
+.gen-info { flex: 1; min-width: 0; }
+.gen-name { font-size: clamp(11px,2.5vw,13px); color: var(--orange); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gen-name.lk { color: #998; }
+.gen-cost { font-family: 'Oswald',sans-serif; font-size: clamp(9px,2.2vw,11px); color: rgba(255,255,255,.6); margin-top: 2px; }
+
+.gen-count { font-size: clamp(18px,4vw,22px); font-weight: 900; min-width: 26px; text-align: right; flex-shrink: 0; }
+.gen-count.lk { font-size: 9px; color: #998; line-height: 1.3; }
+
+.shop-banner {
+  background: linear-gradient(90deg,#009900,#006600);
+  padding: 9px; text-align: center;
+  font-size: clamp(12px,2.5vw,14px); color: var(--yellow);
+  letter-spacing: 1px; border-top: 3px solid var(--yellow);
+}
+
+/* ─── BOTTOM BANNER (desktop) ─── */
+.bottom-banner {
+  background: linear-gradient(90deg,#009900,#006600);
+  padding: 12px 16px; text-align: center;
+  font-size: clamp(15px,4vw,26px); color: var(--yellow);
+  text-shadow: 3px 3px 0 rgba(0,0,0,.4); letter-spacing: 2px;
+  text-transform: uppercase;
+  border-top: 4px solid var(--yellow); flex-shrink: 0;
+  animation: bglow 2s ease-in-out infinite;
+}
+@keyframes bglow {
+  0%,100% { box-shadow: inset 0 0 20px rgba(255,215,0,.15); }
+  50%      { box-shadow: inset 0 0 40px rgba(255,215,0,.35); }
+}
+
+/* ─── MOBILE BOTTOM NAV ─── */
+.mob-nav {
+  display: none; position: fixed; bottom: 0; left: 0; right: 0;
+  background: rgba(15,3,40,.97); border-top: 3px solid var(--yellow);
+  z-index: 50; padding-bottom: env(safe-area-inset-bottom,0);
+}
+.mob-nav-inner { display: flex; }
+.mob-tab {
+  flex: 1; padding: 10px 4px 8px; text-align: center;
+  cursor: pointer; border: none; background: transparent;
+  color: rgba(255,255,255,.5); font-family: 'Russo One',sans-serif;
+  font-size: 10px; display: flex; flex-direction: column;
+  align-items: center; gap: 3px; transition: color .15s;
+  touch-action: manipulation;
+}
+.mob-tab .ti { font-size: 22px; display: block; }
+.mob-tab.active { color: var(--yellow); }
+.mob-tab.active .ti { filter: drop-shadow(0 0 6px gold); }
+
+/* ─── MODAL ─── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.72); z-index: 100;
+  align-items: center; justify-content: center;
+}
+.modal-overlay.active { display: flex; }
+.modal-box {
+  background: linear-gradient(135deg,#7b2fbf,#3a1060);
+  border: 4px solid var(--yellow); border-radius: 20px;
+  padding: 28px 22px; text-align: center; width: min(320px,92vw);
+  animation: pop-in .2s ease;
+}
+@keyframes pop-in { from{transform:scale(.85);opacity:0} to{transform:scale(1);opacity:1} }
+.modal-box h2 { color: var(--yellow); font-size: 20px; margin-bottom: 8px; }
+.modal-box p  { font-family:'Oswald',sans-serif; font-size:15px; margin-bottom:14px; color:rgba(255,255,255,.9); }
+.modal-big { font-size: 40px; margin-bottom: 18px; }
+.modal-btns { display: flex; gap: 10px; justify-content: center; }
+.modal-btn { padding: 10px 22px; border: none; border-radius: 10px; font-family:'Russo One',sans-serif; font-size:15px; cursor:pointer; touch-action:manipulation; }
+.modal-btn.confirm { background: var(--yellow); color: #000; }
+.modal-btn.cancel  { background: rgba(255,255,255,.18); color: white; }
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 780px) {
+  .content-area { grid-template-columns: 1fr 260px; gap: 8px; padding: 8px; }
+  .booster-btn { width: 46px; height: 46px; font-size: 21px; }
+}
+
+@media (max-width: 600px) {
+  /* Stack: one column, bottom tabs */
+  .content-area { display: block; padding: 8px 8px 76px; }
+  .right-panel  { display: none; }
+  .right-panel.mob-active   { display: block; }
+  .clicker-col  { display: none; }
+  .clicker-col.mob-active   { display: flex; }
+  .mob-nav { display: block; }
+  .bottom-banner { display: none; }
+  .title-logo .sub { display: none; }
+  .promo-badge { display: none; }
+  /* bigger ring on phone */
+  .clicker-ring { width: min(74vw,290px); height: min(74vw,290px); }
+  .sneaker { font-size: min(30vw,115px); }
+}
+
+@media (max-width: 380px) {
+  .topbar { padding: 5px 6px; gap: 4px; }
+  .avatar { width: 28px; height: 28px; font-size: 16px; }
+  .score-badge { font-size: 10px; padding: 2px 7px; }
+  .coin-icon { font-size: 15px; }
+  .add-btn { width: 24px; height: 24px; font-size: 14px; }
+}
 </style>
 </head>
 <body>
+<div class="shell">
 
-<div class="container">
-  <header>
-    <h1>🍕 PizzaCraft</h1>
-    <p>Создай пиццу своей мечты прямо сейчас!</p>
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <div class="player-card">
+      <div class="avatar">🐧</div>
+      <div>
+        <div class="score-badge" id="topScore">⭐ 2 304</div>
+        <div class="rank" id="rankDisplay">Вы на 788 месте</div>
+      </div>
+    </div>
+
+    <div class="title-logo">
+      <span class="sub">ТАКАЯ ВОТ</span>
+      <div class="main"><span>ВЕЧНАЯ</span> МОЛОДОСТЬ</div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0">
+      <div class="coins-block">
+        <span class="coin-icon">🪙</span>
+        <span class="coin-count" id="coinCount">0</span>
+        <button class="add-btn" onclick="openModal()">+</button>
+      </div>
+      <span class="promo-badge">Акция ×3</span>
+    </div>
   </header>
 
-  <div class="main-layout">
+  <!-- CONTENT -->
+  <div class="content-area">
 
-    <!-- PIZZA CANVAS -->
-    <div class="pizza-section">
-      <div class="pizza-name-wrap">
-        <label>Название твоей пиццы</label>
-        <input type="text" id="pizza-name" placeholder="Моя шедевральная пицца..." maxlength="40">
+    <!-- CLICKER -->
+    <div class="clicker-col mob-active" id="clickerCol">
+      <div class="star-score"><span class="star-icon">⭐</span><span id="mainScore">2 301</span></div>
+      <div class="per-sec">В секунду:&nbsp;<span id="perSec">+0</span></div>
+
+      <div class="clicker-ring" id="clickerRing">
+        <span class="sneaker">👟</span>
       </div>
 
-      <div class="crust-options">
-        <button class="crust-btn active" onclick="setCrust('тонкое', this)">🫓 Тонкое</button>
-        <button class="crust-btn" onclick="setCrust('классическое', this)">🍕 Классическое</button>
-        <button class="crust-btn" onclick="setCrust('толстое', this)">🧁 Толстое</button>
+      <div class="progress-wrap">
+        <div class="progress-fill" id="progressFill" style="width:40%"></div>
+      </div>
+      <div class="level-info" id="levelInfo">До следующего уровня: 699 ⭐</div>
+
+      <button class="upgrade-btn" id="upgradeBtn" onclick="upgrade()">Увеличить уровень</button>
+      <div class="obj-stars">⭐ Объект уровня <span id="objLevel">35</span></div>
+    </div>
+
+    <!-- SHOP / RIGHT PANEL -->
+    <div class="right-panel" id="shopPanel">
+      <div class="panel-duck-row">
+        <div class="duck-av">🦆</div>
+        <span class="panel-title">Бустеры</span>
+        <span style="margin-left:auto;opacity:.5;font-size:13px">▶</span>
       </div>
 
-      <div class="pizza-canvas-wrap">
-        <div class="pizza-canvas" id="pizza-canvas">
-          <div class="layer" id="crust-layer"></div>
-          <div id="crust-ring"></div>
-          <div class="layer" id="sauce-layer"></div>
-          <div class="layer" id="cheese-layer"></div>
-          <div class="layer" id="toppings-layer"></div>
+      <div class="boosters-row">
+        <div class="booster-item" onclick="activateBooster('quiz')">
+          <div class="booster-btn blue">❓</div>
+        </div>
+        <div class="booster-item">
+          <div class="booster-btn red">👑</div>
+          <div class="booster-label gold">4.12 ФМ</div>
+        </div>
+        <div class="booster-item" onclick="activateBooster('percent')">
+          <div class="booster-btn teal">%</div>
+          <div class="booster-label gold">12000 🪙</div>
+        </div>
+        <div class="booster-item" onclick="activateBooster('up')">
+          <div class="booster-btn grn">⬆️</div>
+          <div class="booster-label">беспл.</div>
         </div>
       </div>
 
-      <div class="price-tag">
-        💰 <span id="total-price">149</span> ₽
-      </div>
+      <div class="section-head">Генераторы</div>
+      <div class="generators">
 
-      <div class="action-btns">
-        <button class="btn btn-order" onclick="orderPizza()">🛒 Заказать!</button>
-        <button class="btn btn-reset" onclick="resetPizza()">🔄 Сбросить</button>
-        <button class="btn btn-save" onclick="savePizza()">💾 Сохранить</button>
-      </div>
-    </div>
-
-    <!-- INGREDIENTS PANEL -->
-    <div class="ingredients-panel">
-
-      <!-- Sauce -->
-      <div class="category-card">
-        <div class="category-title">🫙 Соус</div>
-        <div class="ingredients-grid" id="sauce-grid"></div>
-      </div>
-
-      <!-- Cheese -->
-      <div class="category-card">
-        <div class="category-title">🧀 Сыр</div>
-        <div class="ingredients-grid" id="cheese-grid"></div>
-      </div>
-
-      <!-- Meat -->
-      <div class="category-card">
-        <div class="category-title">🥩 Мясо</div>
-        <div class="ingredients-grid" id="meat-grid"></div>
-      </div>
-
-      <!-- Veggies -->
-      <div class="category-card">
-        <div class="category-title">🥦 Овощи</div>
-        <div class="ingredients-grid" id="veggie-grid"></div>
-      </div>
-
-      <!-- Extra -->
-      <div class="category-card">
-        <div class="category-title">✨ Особое</div>
-        <div class="ingredients-grid" id="extra-grid"></div>
-      </div>
-
-      <!-- Recipe summary -->
-      <div class="category-card">
-        <div class="category-title">📋 Состав</div>
-        <div class="recipe-display" id="recipe-display">
-          <span class="empty">Добавляй ингредиенты, чтобы собрать пиццу!</span>
+        <div class="gen-item" id="gen1" onclick="buyGenerator(1)">
+          <div class="gen-icon y">🐓</div>
+          <div class="gen-info">
+            <div class="gen-name">Петушок на палке</div>
+            <div class="gen-cost">⭐ <span id="gen1Cost">15</span> · +1/сек</div>
+          </div>
+          <div class="gen-count" id="gen1Count">0</div>
         </div>
+
+        <div class="gen-item" id="gen2" onclick="buyGenerator(2)">
+          <div class="gen-icon y">🎮</div>
+          <div class="gen-info">
+            <div class="gen-name">Денди</div>
+            <div class="gen-cost">⭐ <span id="gen2Cost">80</span> · +5/сек</div>
+          </div>
+          <div class="gen-count" id="gen2Count">0</div>
+        </div>
+
+        <div class="gen-item locked" id="gen3">
+          <div class="gen-icon lk">❓</div>
+          <div class="gen-info"><div class="gen-name lk">???</div></div>
+          <div class="gen-count lk">Нужен<br>ур. 3</div>
+        </div>
+
+        <div class="gen-item locked" id="gen4">
+          <div class="gen-icon lk">❓</div>
+          <div class="gen-info"><div class="gen-name lk">???</div></div>
+          <div class="gen-count lk">Нужен<br>ур. 5</div>
+        </div>
+
       </div>
-
+      <div class="shop-banner">🎉 ПРОКАЧАЙ НОСТАЛЬГИЮ 🎉</div>
     </div>
-  </div>
-</div>
 
-<!-- COOKING ANIMATION OVERLAY -->
-<div class="cooking-overlay" id="cooking-overlay">
-  <div class="kitchen-bg" id="kitchen-bg"></div>
-  <div class="oven-glow"></div>
-  <div class="smoke" style="width:60px;height:60px;left:20%;bottom:30%;animation-delay:0s;animation-duration:2.2s;"></div>
-  <div class="smoke" style="width:40px;height:40px;left:70%;bottom:25%;animation-delay:0.7s;animation-duration:1.8s;"></div>
-  <div class="smoke" style="width:80px;height:80px;left:45%;bottom:20%;animation-delay:1.2s;animation-duration:2.5s;"></div>
+  </div><!-- /content-area -->
 
-  <div class="cooking-title" id="cooking-title">👨‍🍳 Готовим твою пиццу!</div>
-  <div class="cooking-stage-label" id="stage-label">Подготовка ингредиентов...</div>
+  <!-- BOTTOM BANNER (desktop) -->
+  <div class="bottom-banner">🎉 Прокачай ностальгию 🎉</div>
 
-  <div id="assembly-phase">
-    <div class="cooking-pizza-wrap" style="position:relative;width:320px;height:320px;margin-bottom:30px;z-index:2;">
-      <div class="cooking-pizza" id="cook-pizza">
-        <div class="cook-layer" id="cook-crust"></div>
-        <div id="cook-crust-ring"></div>
-        <div class="cook-layer" id="cook-sauce"></div>
-        <div class="cook-layer" id="cook-cheese"></div>
-        <div id="cook-toppings"></div>
-      </div>
+  <!-- MOBILE NAV -->
+  <nav class="mob-nav">
+    <div class="mob-nav-inner">
+      <button class="mob-tab active" id="tabClicker" onclick="switchTab('clicker')">
+        <span class="ti">👟</span>Кликер
+      </button>
+      <button class="mob-tab" id="tabShop" onclick="switchTab('shop')">
+        <span class="ti">🛍️</span>Магазин
+      </button>
+      <button class="mob-tab" onclick="openModal()">
+        <span class="ti">🪙</span>Монеты
+      </button>
     </div>
-    <div class="cook-progress-wrap">
-      <div class="cook-progress-bar" id="cook-progress"></div>
+  </nav>
+
+</div><!-- /shell -->
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal-box">
+    <h2>💰 Купить монеты</h2>
+    <p>Пополни баланс и получи ×3 по акции!</p>
+    <div class="modal-big">🪙 100 монет</div>
+    <div class="modal-btns">
+      <button class="modal-btn confirm" onclick="buyCoins()">Купить!</button>
+      <button class="modal-btn cancel"  onclick="closeModal()">Отмена</button>
     </div>
-  </div>
-
-  <div class="baking-phase" id="baking-phase">
-    <div class="oven-emoji">🔥</div>
-    <div style="font-family:'Pacifico',cursive;color:#ff9800;font-size:1.6rem;margin-bottom:16px;">Выпекаем...</div>
-    <div class="bake-bar-wrap">
-      <div class="bake-bar" id="bake-bar"></div>
-    </div>
-    <div class="bake-text" id="bake-text">Разогреваем до 350°C...</div>
-  </div>
-
-  <div class="final-reveal" id="final-reveal">
-    <div class="final-pizza">🍕</div>
-    <div class="final-title" id="final-pizza-name">Готово!</div>
-    <div class="final-subtitle">Твоя пицца выглядит восхитительно! 🤩</div>
-    <button class="btn btn-order" onclick="closeCooking()" style="margin:0 auto;font-size:1.1rem;padding:14px 36px;">
-      🎉 Оформить заказ!
-    </button>
-  </div>
-</div>
-
-<!-- Toast -->
-<div class="toast" id="toast"></div>
-
-<!-- Order Modal -->
-<div class="modal-overlay" id="modal-overlay">
-  <div class="modal">
-    <h2>Заказ принят!</h2>
-    <span class="modal-pizza-emoji">🍕</span>
-    <p id="modal-pizza-name" style="font-size:1.3rem; color: var(--sauce); font-family:'Pacifico',cursive;"></p>
-    <p id="modal-summary"></p>
-    <p id="modal-price" style="font-size:1.5rem; color: var(--dark);"></p>
-    <p style="margin-top: 12px; font-size: 0.9rem; color:#b0956d;">Ваша пицца уже готовится на кухне 👨‍🍳</p>
-    <button class="btn btn-order" onclick="closeModal()" style="margin: 0 auto; margin-top: 20px;">🎉 Отлично!</button>
   </div>
 </div>
 
 <script>
-// ======================== DATA ========================
-const BASE_PRICE = 149;
+/* ── STATE ── */
+let score = 2301, coins = 0, objLevel = 35;
+let perSecond = 0, clickValue = 1;
+let upgradeThreshold = 3000, boosterActive = null, freeUsed = false;
 
-const ingredients = {
-  sauce: [
-    { id: 's1', name: 'Томатный', emoji: '🍅', price: 0, color: '#d94f2c' },
-    { id: 's2', name: 'Сливочный', emoji: '🍶', price: 20, color: '#fffacd' },
-    { id: 's3', name: 'Барбекю', emoji: '🍫', price: 25, color: '#5a2d00' },
-    { id: 's4', name: 'Острый', emoji: '🌶️', price: 15, color: '#e63900' },
-  ],
-  cheese: [
-    { id: 'c1', name: 'Моцарелла', emoji: '🧀', price: 40, color: '#f5c842' },
-    { id: 'c2', name: 'Пармезан', emoji: '🫙', price: 55, color: '#d4a52a' },
-    { id: 'c3', name: 'Горгонзола', emoji: '🫧', price: 65, color: '#8fbc8f' },
-    { id: 'c4', name: 'Бри', emoji: '🍰', price: 60, color: '#fffde7' },
-  ],
-  meat: [
-    { id: 'm1', name: 'Пепперони', emoji: '🌭', price: 70 },
-    { id: 'm2', name: 'Бекон', emoji: '🥓', price: 65 },
-    { id: 'm3', name: 'Курица', emoji: '🍗', price: 60 },
-    { id: 'm4', name: 'Ветчина', emoji: '🍖', price: 60 },
-    { id: 'm5', name: 'Тунец', emoji: '🐟', price: 75 },
-    { id: 'm6', name: 'Говядина', emoji: '🥩', price: 80 },
-  ],
-  veggie: [
-    { id: 'v1', name: 'Шампиньоны', emoji: '🍄', price: 30 },
-    { id: 'v2', name: 'Перец', emoji: '🫑', price: 25 },
-    { id: 'v3', name: 'Лук', emoji: '🧅', price: 15 },
-    { id: 'v4', name: 'Оливки', emoji: '🫒', price: 35 },
-    { id: 'v5', name: 'Томаты', emoji: '🍅', price: 25 },
-    { id: 'v6', name: 'Кукуруза', emoji: '🌽', price: 20 },
-    { id: 'v7', name: 'Шпинат', emoji: '🥬', price: 30 },
-    { id: 'v8', name: 'Руккола', emoji: '🌿', price: 35 },
-  ],
-  extra: [
-    { id: 'e1', name: 'Яйцо', emoji: '🍳', price: 30 },
-    { id: 'e2', name: 'Ананас', emoji: '🍍', price: 35 },
-    { id: 'e3', name: 'Мёд', emoji: '🍯', price: 20 },
-    { id: 'e4', name: 'Трюфель', emoji: '🔮', price: 120 },
-    { id: 'e5', name: 'Авокадо', emoji: '🥑', price: 55 },
-  ]
-};
+const gens = [
+  { id:1, name:'Петушок', count:0, baseCost:15,   income:1  },
+  { id:2, name:'Денди',   count:0, baseCost:80,   income:5  },
+];
 
-// ======================== STATE ========================
-let state = {
-  sauce: null,
-  cheese: null,
-  toppings: {}, // id -> count
-  crust: 'тонкое'
-};
-
-// ======================== RENDER GRIDS ========================
-function renderGrid(gridId, items, category) {
-  const grid = document.getElementById(gridId);
-  grid.innerHTML = items.map(item => `
-    <button class="ingredient-btn ${category === 'sauce' ? 'sauce-btn' : ''}"
-      id="btn-${item.id}"
-      onclick="toggleIngredient('${category}', '${item.id}')"
-      title="${item.name} (+${item.price}₽)"
-    >
-      <span class="emoji">${item.emoji}</span>
-      <span class="name">${item.name}</span>
-      <span class="price">${item.price ? '+' + item.price + '₽' : 'бесплатно'}</span>
-      <span class="count-badge" id="count-${item.id}">1</span>
-    </button>
-  `).join('');
+/* ── FORMAT ── */
+function fmt(n) {
+  if (n >= 1e9) return (n/1e9).toFixed(1)+' млрд';
+  if (n >= 1e6) return (n/1e6).toFixed(1)+' млн';
+  if (n >= 1000) return Math.floor(n).toLocaleString('ru');
+  return Math.floor(n).toString();
 }
 
-renderGrid('sauce-grid', ingredients.sauce, 'sauce');
-renderGrid('cheese-grid', ingredients.cheese, 'cheese');
-renderGrid('meat-grid', ingredients.meat, 'meat');
-renderGrid('veggie-grid', ingredients.veggie, 'veggie');
-renderGrid('extra-grid', ingredients.extra, 'extra');
+/* ── UPDATE UI ── */
+function ui() {
+  document.getElementById('mainScore').textContent = fmt(score);
+  document.getElementById('topScore').textContent  = '⭐ '+fmt(score+3);
+  document.getElementById('coinCount').textContent = coins;
+  document.getElementById('perSec').textContent    = '+'+perSecond;
+  document.getElementById('objLevel').textContent  = objLevel;
 
-// ======================== TOGGLE ========================
-function getItemById(id) {
-  for (const cat of Object.values(ingredients)) {
-    const found = cat.find(i => i.id === id);
-    if (found) return found;
+  const prog = Math.min(100, Math.max(0, (score/upgradeThreshold)*100));
+  document.getElementById('progressFill').style.width = prog+'%';
+  const toNext = upgradeThreshold-score;
+  document.getElementById('levelInfo').textContent = toNext > 0
+    ? 'До следующего уровня: '+fmt(toNext)+' ⭐' : '🔥 Готово к апгрейду!';
+  document.getElementById('upgradeBtn').disabled = score < upgradeThreshold;
+
+  gens.forEach(g => {
+    const cost = Math.floor(g.baseCost * Math.pow(1.5, g.count));
+    const costEl = document.getElementById('gen'+g.id+'Cost');
+    const cntEl  = document.getElementById('gen'+g.id+'Count');
+    const itEl   = document.getElementById('gen'+g.id);
+    if (costEl) costEl.textContent = fmt(cost);
+    if (cntEl)  cntEl.textContent  = g.count;
+    if (itEl)   itEl.style.opacity = score >= cost ? '1' : '0.5';
+  });
+
+  const rank = Math.max(1, 1000 - Math.floor(score/100));
+  document.getElementById('rankDisplay').textContent = 'Вы на '+rank+' месте';
+}
+
+/* ── CLICK ── */
+function doClick(cx, cy) {
+  const val = clickValue * (boosterActive === 'percent' ? 2 : 1);
+  score += val;
+  const p = document.createElement('div');
+  p.className = 'click-particle';
+  p.textContent = '+'+val;
+  p.style.cssText = `left:${cx}px;top:${cy-10}px`;
+  document.body.appendChild(p);
+  setTimeout(() => p.remove(), 850);
+  ui();
+}
+
+const ring = document.getElementById('clickerRing');
+ring.addEventListener('click', e => doClick(e.clientX, e.clientY));
+ring.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const t = e.touches[0];
+  doClick(t.clientX, t.clientY);
+}, { passive: false });
+
+/* ── UPGRADE ── */
+function upgrade() {
+  if (score < upgradeThreshold) return;
+  score -= upgradeThreshold;
+  objLevel++;
+  upgradeThreshold = Math.floor(upgradeThreshold * 1.8);
+  clickValue++;
+  if (objLevel >= 3) unlock(3,'🎸','Кассета',  500, 20);
+  if (objLevel >= 5) unlock(4,'📺','Телевизор',2000, 50);
+  flashRing();
+  toast('🎉 Уровень '+objLevel+'! Клик +'+clickValue+' ⭐');
+  ui();
+}
+
+function unlock(slot, icon, name, cost, income) {
+  const el = document.getElementById('gen'+slot);
+  if (!el || !el.classList.contains('locked')) return;
+  el.classList.remove('locked');
+  const bg = slot===3
+    ? 'background:linear-gradient(135deg,#ff2200,#ff6600)'
+    : 'background:linear-gradient(135deg,#0044ff,#00aaff)';
+  el.innerHTML = `
+    <div class="gen-icon" style="${bg};width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:24px;">${icon}</div>
+    <div class="gen-info">
+      <div class="gen-name">${name}</div>
+      <div class="gen-cost">⭐ <span id="gen${slot}Cost">${cost}</span> · +${income}/сек</div>
+    </div>
+    <div class="gen-count" id="gen${slot}Count">0</div>`;
+  gens.push({ id:slot, name, count:0, baseCost:cost, income });
+  el.onclick = () => buyGenerator(slot);
+}
+
+/* ── BUY GEN ── */
+function buyGenerator(id) {
+  const g = gens.find(x => x.id === id);
+  if (!g) return;
+  const cost = Math.floor(g.baseCost * Math.pow(1.5, g.count));
+  if (score < cost) { toast('Недостаточно ⭐!'); return; }
+  score -= cost; g.count++; perSecond += g.income;
+  toast('✅ '+g.name+' куплен! +'+g.income+'/сек'); ui();
+}
+
+/* ── BOOSTERS ── */
+function activateBooster(type) {
+  if (type==='quiz') {
+    score += 50; toast('🎲 Бонус: +50 ⭐');
+  } else if (type==='percent') {
+    if (coins < 12000) { toast('Нужно 12 000 🪙!'); return; }
+    coins -= 12000; boosterActive = 'percent';
+    toast('💹 Двойной клик на 30 сек!');
+    setTimeout(() => { boosterActive=null; toast('Бустер закончился'); }, 30000);
+  } else if (type==='up') {
+    if (freeUsed) { toast('Уже использован сегодня!'); return; }
+    freeUsed = true; score += 200; toast('⬆️ Бесплатный бонус: +200 ⭐!');
   }
-  return null;
+  ui();
 }
 
-function toggleIngredient(category, id) {
-  const btn = document.getElementById('btn-' + id);
+/* ── MODAL ── */
+function openModal()  { document.getElementById('modal').classList.add('active'); }
+function closeModal() { document.getElementById('modal').classList.remove('active'); }
+function buyCoins() {
+  coins += 300; closeModal();
+  toast('🪙 +300 монет (акция ×3)!'); ui();
+}
 
-  if (category === 'sauce') {
-    // Deselect old
-    if (state.sauce && state.sauce !== id) {
-      document.getElementById('btn-' + state.sauce)?.classList.remove('selected');
-    }
-    if (state.sauce === id) {
-      state.sauce = null;
-      btn.classList.remove('selected');
-    } else {
-      state.sauce = id;
-      btn.classList.add('selected');
-    }
-  } else if (category === 'cheese') {
-    if (state.cheese && state.cheese !== id) {
-      document.getElementById('btn-' + state.cheese)?.classList.remove('selected');
-    }
-    if (state.cheese === id) {
-      state.cheese = null;
-      btn.classList.remove('selected');
-    } else {
-      state.cheese = id;
-      btn.classList.add('selected');
-    }
+/* ── TABS (mobile) ── */
+function switchTab(tab) {
+  const cc = document.getElementById('clickerCol');
+  const sp = document.getElementById('shopPanel');
+  const tc = document.getElementById('tabClicker');
+  const ts = document.getElementById('tabShop');
+  if (tab==='clicker') {
+    cc.classList.add('mob-active');   sp.classList.remove('mob-active');
+    tc.classList.add('active');       ts.classList.remove('active');
   } else {
-    // Toppings - allow multiple, up to 3 of same
-    const cur = state.toppings[id] || 0;
-    if (cur >= 3) {
-      delete state.toppings[id];
-      btn.classList.remove('selected');
-    } else {
-      state.toppings[id] = cur + 1;
-      btn.classList.add('selected');
-    }
-    const badge = document.getElementById('count-' + id);
-    const count = state.toppings[id] || 0;
-    badge.style.display = count > 1 ? 'flex' : 'none';
-    badge.textContent = count;
-  }
-
-  renderPizza();
-  updateRecipe();
-  updatePrice();
-}
-
-// ======================== PIZZA VISUAL ========================
-function renderPizza() {
-  // Sauce layer
-  const sauceLayer = document.getElementById('sauce-layer');
-  if (state.sauce) {
-    const item = getItemById(state.sauce);
-    sauceLayer.style.opacity = '1';
-    // color variations
-    const colors = {
-      s1: 'radial-gradient(circle at 35% 30%, #e8553a, #b52d10)',
-      s2: 'radial-gradient(circle at 35% 30%, #fff9c4, #f0e68c)',
-      s3: 'radial-gradient(circle at 35% 30%, #8b4513, #4a1a00)',
-      s4: 'radial-gradient(circle at 35% 30%, #ff4500, #cc0000)',
-    };
-    sauceLayer.style.background = colors[state.sauce] || colors.s1;
-  } else {
-    sauceLayer.style.opacity = '0';
-  }
-
-  // Cheese layer
-  const cheeseLayer = document.getElementById('cheese-layer');
-  if (state.cheese && state.sauce) {
-    cheeseLayer.style.opacity = '1';
-    const colors = {
-      c1: 'radial-gradient(circle at 40% 35%, #ffe97a, #f0c020)',
-      c2: 'radial-gradient(circle at 40% 35%, #deb887, #c8a040)',
-      c3: 'radial-gradient(circle at 40% 35%, #90ee90, #6ab04c)',
-      c4: 'radial-gradient(circle at 40% 35%, #fffde7, #f5f5dc)',
-    };
-    cheeseLayer.style.background = colors[state.cheese] || colors.c1;
-  } else {
-    cheeseLayer.style.opacity = '0';
-  }
-
-  // Toppings
-  const toppingsLayer = document.getElementById('toppings-layer');
-  toppingsLayer.innerHTML = '';
-
-  Object.entries(state.toppings).forEach(([id, count]) => {
-    if (!count) return;
-    const item = getItemById(id);
-    if (!item) return;
-
-    // Place emojis in semi-random positions on pizza
-    for (let i = 0; i < count; i++) {
-      const positions = getPositions(id, i, count);
-      const el = document.createElement('span');
-      el.className = 'topping-item';
-      el.textContent = item.emoji;
-      el.style.left = positions.x + 'px';
-      el.style.top = positions.y + 'px';
-      toppingsLayer.appendChild(el);
-    }
-  });
-}
-
-function getPositions(id, index, total) {
-  // Deterministic semi-random positions inside pizza circle
-  const seed = id.charCodeAt(0) + id.charCodeAt(1) * 13 + index * 57;
-  const rand = (n, offset=0) => ((seed * (n+1) * 2654435761) >>> 0) % 100 / 100 * 0.8 + offset * 0.1;
-
-  const cx = 170, cy = 170, r = 120;
-  const angle = (rand(1) + index/total) * 2 * Math.PI;
-  const dist = rand(2) * r * 0.75 + 30;
-  const x = cx + Math.cos(angle) * dist - 14;
-  const y = cy + Math.sin(angle) * dist - 14;
-  return { x: Math.max(40, Math.min(290, x)), y: Math.max(40, Math.min(290, y)) };
-}
-
-// ======================== RECIPE ========================
-function updateRecipe() {
-  const display = document.getElementById('recipe-display');
-  const chips = [];
-
-  if (state.sauce) {
-    const item = getItemById(state.sauce);
-    chips.push({ id: state.sauce, label: item.emoji + ' ' + item.name, type: 'sauce' });
-  }
-  if (state.cheese) {
-    const item = getItemById(state.cheese);
-    chips.push({ id: state.cheese, label: item.emoji + ' ' + item.name, type: 'cheese' });
-  }
-  Object.entries(state.toppings).forEach(([id, count]) => {
-    if (!count) return;
-    const item = getItemById(id);
-    chips.push({ id, label: item.emoji + ' ' + item.name + (count > 1 ? ' x' + count : ''), type: 'topping' });
-  });
-
-  if (!chips.length) {
-    display.innerHTML = '<span class="empty">Добавляй ингредиенты, чтобы собрать пиццу!</span>';
-    return;
-  }
-
-  display.innerHTML = chips.map(c =>
-    `<span class="recipe-chip" onclick="removeIngredient('${c.type}','${c.id}')">
-      ${c.label} <span class="remove">×</span>
-    </span>`
-  ).join('');
-}
-
-function removeIngredient(type, id) {
-  if (type === 'sauce') state.sauce = null;
-  else if (type === 'cheese') state.cheese = null;
-  else {
-    delete state.toppings[id];
-    document.getElementById('count-' + id).style.display = 'none';
-  }
-  document.getElementById('btn-' + id)?.classList.remove('selected');
-  renderPizza();
-  updateRecipe();
-  updatePrice();
-}
-
-// ======================== PRICE ========================
-function updatePrice() {
-  let price = BASE_PRICE;
-  const crustPrices = { 'тонкое': 0, 'классическое': 30, 'толстое': 50 };
-  price += crustPrices[state.crust] || 0;
-
-  if (state.sauce) price += getItemById(state.sauce).price;
-  if (state.cheese) price += getItemById(state.cheese).price;
-  Object.entries(state.toppings).forEach(([id, count]) => {
-    price += getItemById(id).price * count;
-  });
-
-  document.getElementById('total-price').textContent = price;
-}
-
-// ======================== CRUST ========================
-function setCrust(type, btn) {
-  state.crust = type;
-  document.querySelectorAll('.crust-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  updatePrice();
-}
-
-// ======================== ACTIONS ========================
-function resetPizza() {
-  state.sauce = null;
-  state.cheese = null;
-  state.toppings = {};
-
-  document.querySelectorAll('.ingredient-btn').forEach(b => b.classList.remove('selected'));
-  document.querySelectorAll('.count-badge').forEach(b => { b.style.display='none'; b.textContent='1'; });
-
-  renderPizza();
-  updateRecipe();
-  updatePrice();
-  showToast('🔄 Пицца сброшена! Начни сначала');
-}
-
-function savePizza() {
-  const name = document.getElementById('pizza-name').value || 'Моя пицца';
-  showToast('💾 «' + name + '» сохранена!');
-}
-
-function orderPizza() {
-  startCookingAnimation();
-}
-
-// ======================== COOKING ANIMATION ========================
-function startCookingAnimation() {
-  const overlay = document.getElementById('cooking-overlay');
-  overlay.classList.add('show');
-
-  // Reset all phases
-  document.getElementById('assembly-phase').style.display = 'block';
-  document.getElementById('baking-phase').classList.remove('active');
-  document.getElementById('final-reveal').classList.remove('active');
-  document.getElementById('cook-progress').style.width = '0%';
-  document.getElementById('cook-toppings').innerHTML = '';
-  document.getElementById('cook-sauce').style.opacity = '0';
-  document.getElementById('cook-cheese').style.opacity = '0';
-  document.getElementById('stage-label').textContent = 'Подготовка ингредиентов...';
-
-  // Sparks
-  spawnSparks();
-
-  // Build steps list
-  const steps = buildCookingSteps();
-  let stepIdx = 0;
-  const total = steps.length;
-
-  function runStep() {
-    if (stepIdx >= total) {
-      // All assembled → bake
-      setTimeout(startBaking, 400);
-      return;
-    }
-    const step = steps[stepIdx];
-    document.getElementById('cook-progress').style.width = ((stepIdx + 1) / total * 100) + '%';
-    document.getElementById('stage-label').style.opacity = '0';
-    setTimeout(() => {
-      document.getElementById('stage-label').textContent = step.label;
-      document.getElementById('stage-label').style.opacity = '1';
-    }, 200);
-
-    step.action();
-    stepIdx++;
-    setTimeout(runStep, step.delay || 800);
-  }
-
-  setTimeout(runStep, 600);
-}
-
-function buildCookingSteps() {
-  const steps = [];
-
-  // Crust step
-  steps.push({
-    label: `🫓 Раскатываем тесто (${state.crust})...`,
-    delay: 900,
-    action: () => {
-      const el = document.getElementById('cook-crust');
-      el.style.transform = 'scale(0.5)';
-      el.style.transition = 'transform 0.6s cubic-bezier(0.34,1.56,0.64,1)';
-      el.style.background = 'radial-gradient(circle at 30% 30%, #f0c580, #c8813a)';
-      setTimeout(() => el.style.transform = 'scale(1)', 50);
-    }
-  });
-
-  // Sauce
-  if (state.sauce) {
-    const sauceColors = {
-      s1: 'radial-gradient(circle at 35% 30%, #e8553a, #b52d10)',
-      s2: 'radial-gradient(circle at 35% 30%, #fff9c4, #f0e68c)',
-      s3: 'radial-gradient(circle at 35% 30%, #8b4513, #4a1a00)',
-      s4: 'radial-gradient(circle at 35% 30%, #ff4500, #cc0000)',
-    };
-    const sauceItem = getItemById(state.sauce);
-    steps.push({
-      label: `${sauceItem.emoji} Наносим ${sauceItem.name} соус...`,
-      delay: 900,
-      action: () => {
-        const el = document.getElementById('cook-sauce');
-        el.style.background = sauceColors[state.sauce];
-        el.style.transform = 'scale(0)';
-        el.style.transition = 'opacity 0.1s, transform 0.6s cubic-bezier(0.34,1.56,0.64,1)';
-        el.style.opacity = '1';
-        setTimeout(() => el.style.transform = 'scale(1)', 50);
-        spawnSplash('cook-pizza', '#d94f2c');
-      }
-    });
-  }
-
-  // Cheese
-  if (state.cheese) {
-    const cheeseColors = {
-      c1: 'radial-gradient(circle at 40% 35%, #ffe97a, #f0c020)',
-      c2: 'radial-gradient(circle at 40% 35%, #deb887, #c8a040)',
-      c3: 'radial-gradient(circle at 40% 35%, #90ee90, #6ab04c)',
-      c4: 'radial-gradient(circle at 40% 35%, #fffde7, #f5f5dc)',
-    };
-    const cheeseItem = getItemById(state.cheese);
-    steps.push({
-      label: `${cheeseItem.emoji} Посыпаем ${cheeseItem.name}...`,
-      delay: 950,
-      action: () => {
-        const el = document.getElementById('cook-cheese');
-        el.style.background = cheeseColors[state.cheese];
-        el.style.transform = 'scale(0)';
-        el.style.transition = 'opacity 0.1s, transform 0.7s cubic-bezier(0.34,1.56,0.64,1)';
-        el.style.opacity = '1';
-        setTimeout(() => el.style.transform = 'scale(1)', 50);
-        spawnSplash('cook-pizza', '#f5c842');
-        spawnFlyingEmoji(cheeseItem.emoji, 'cook-pizza');
-      }
-    });
-  }
-
-  // Toppings
-  Object.entries(state.toppings).forEach(([id, count]) => {
-    const item = getItemById(id);
-    for (let i = 0; i < count; i++) {
-      steps.push({
-        label: `${item.emoji} Добавляем ${item.name}${count > 1 ? ` (${i+1}/${count})` : ''}...`,
-        delay: 700,
-        action: () => {
-          const pos = getPositions(id, i, count);
-          // Scale position from 340 to 320
-          const sx = pos.x * 320/340;
-          const sy = pos.y * 320/340;
-          addCookTopping(item.emoji, sx, sy);
-          spawnFlyingEmoji(item.emoji, 'cook-pizza');
-        }
-      });
-    }
-  });
-
-  return steps;
-}
-
-function addCookTopping(emoji, x, y) {
-  const layer = document.getElementById('cook-toppings');
-  const el = document.createElement('span');
-  el.style.cssText = `position:absolute;font-size:1.5rem;left:${x}px;top:${y}px;
-    animation:popIn 0.35s cubic-bezier(0.34,1.56,0.64,1);
-    filter:drop-shadow(1px 2px 3px rgba(0,0,0,0.3));user-select:none;`;
-  el.textContent = emoji;
-  layer.appendChild(el);
-}
-
-function spawnFlyingEmoji(emoji, targetId) {
-  const target = document.getElementById(targetId);
-  const rect = target.getBoundingClientRect();
-  const el = document.createElement('div');
-  el.className = 'fly-ingredient';
-  el.textContent = emoji;
-  const startX = rect.left + rect.width / 2 - 24;
-  const startY = rect.top - 100;
-  el.style.left = startX + 'px';
-  el.style.top = startY + 'px';
-  el.style.position = 'fixed';
-  document.body.appendChild(el);
-  setTimeout(() => el.remove(), 800);
-}
-
-function spawnSplash(parentId, color) {
-  const parent = document.getElementById(parentId);
-  const el = document.createElement('div');
-  el.className = 'splash';
-  el.style.cssText = `width:60px;height:60px;top:50%;left:50%;
-    margin:-30px 0 0 -30px;background:${color}55;`;
-  parent.appendChild(el);
-  setTimeout(() => el.remove(), 600);
-}
-
-function spawnSparks() {
-  const bg = document.getElementById('kitchen-bg');
-  bg.innerHTML = '';
-  for (let i = 0; i < 20; i++) {
-    const s = document.createElement('div');
-    s.className = 'spark';
-    s.style.cssText = `
-      left:${Math.random()*100}%;
-      bottom:${Math.random()*30}%;
-      width:${Math.random()*6+2}px;
-      height:${Math.random()*6+2}px;
-      background:hsl(${30 + Math.random()*30},100%,60%);
-      animation-duration:${1+Math.random()*2}s;
-      animation-delay:${Math.random()*3}s;
-    `;
-    bg.appendChild(s);
+    sp.classList.add('mob-active');   cc.classList.remove('mob-active');
+    ts.classList.add('active');       tc.classList.remove('active');
   }
 }
 
-function startBaking() {
-  document.getElementById('assembly-phase').style.display = 'none';
-  document.getElementById('baking-phase').classList.add('active');
-  document.getElementById('cooking-title').textContent = '🔥 В печи!';
-  document.getElementById('stage-label').textContent = '';
-
-  const bakeBar = document.getElementById('bake-bar');
-  const bakeText = document.getElementById('bake-text');
-  const msgs = [
-    'Разогреваем до 350°C... 🌡️',
-    'Тесто поднимается... ⬆️',
-    'Сыр плавится... 🧀',
-    'Корочка золотится... ✨',
-    'Аромат разносится по кухне... 😋',
-    'Последние штрихи... 🎨',
-    'Готово! 🍕',
-  ];
-  let pct = 0;
-  let msgIdx = 0;
-
-  const interval = setInterval(() => {
-    pct += 1.4;
-    bakeBar.style.width = Math.min(pct, 100) + '%';
-    const mIdx = Math.floor((pct / 100) * msgs.length);
-    if (mIdx !== msgIdx && mIdx < msgs.length) {
-      msgIdx = mIdx;
-      bakeText.textContent = msgs[msgIdx];
-    }
-    if (pct >= 100) {
-      clearInterval(interval);
-      setTimeout(showFinalReveal, 400);
-    }
-  }, 35);
+/* ── FLASH RING ── */
+function flashRing() {
+  ring.style.transform='scale(1.07)'; ring.style.filter='brightness(1.4)';
+  setTimeout(()=>{ ring.style.transform=''; ring.style.filter=''; }, 200);
 }
 
-function showFinalReveal() {
-  document.getElementById('baking-phase').classList.remove('active');
-  document.getElementById('final-reveal').classList.add('active');
-  document.getElementById('cooking-title').textContent = '';
-  document.getElementById('stage-label').textContent = '';
-
-  const name = document.getElementById('pizza-name').value || 'Твоя пицца';
-  document.getElementById('final-pizza-name').textContent = '«' + name + '»';
-
-  // Confetti!
-  spawnConfetti();
+/* ── TOAST ── */
+function toast(msg) {
+  const t = document.createElement('div');
+  t.style.cssText=`
+    position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
+    background:rgba(10,0,30,.92);color:var(--yellow);
+    padding:9px 18px;border-radius:12px;white-space:nowrap;
+    font-family:'Russo One',sans-serif;font-size:13px;
+    z-index:9998;border:2px solid rgba(255,215,0,.45);
+    animation:flyup .35s ease;
+  `;
+  t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),2400);
 }
 
-function spawnConfetti() {
-  const colors = ['#ff6b35','#ffd700','#ff4757','#2ed573','#1e90ff','#ff6348','#eccc68'];
-  const overlay = document.getElementById('cooking-overlay');
-  for (let i = 0; i < 50; i++) {
-    setTimeout(() => {
-      const c = document.createElement('div');
-      c.className = 'confetti-piece';
-      c.style.cssText = `
-        left:${Math.random()*100}%;
-        top:-20px;
-        background:${colors[Math.floor(Math.random()*colors.length)]};
-        width:${Math.random()*12+6}px;
-        height:${Math.random()*12+6}px;
-        border-radius:${Math.random() > 0.5 ? '50%' : '2px'};
-        animation-duration:${1.5 + Math.random()*2}s;
-        animation-delay:${Math.random()*0.5}s;
-      `;
-      overlay.appendChild(c);
-      setTimeout(() => c.remove(), 3000);
-    }, i * 40);
-  }
-}
+/* ── PASSIVE INCOME ── */
+setInterval(()=>{ if(perSecond>0){ score+=perSecond; ui(); } }, 1000);
 
-function closeCooking() {
-  document.getElementById('cooking-overlay').classList.remove('show');
-  // Show order modal
-  const name = document.getElementById('pizza-name').value || 'Моя пицца';
-  const price = document.getElementById('total-price').textContent;
-  let parts = [];
-  if (state.sauce) parts.push(getItemById(state.sauce).name + ' соус');
-  if (state.cheese) parts.push(getItemById(state.cheese).name);
-  Object.entries(state.toppings).forEach(([id]) => parts.push(getItemById(id).name));
-  document.getElementById('modal-pizza-name').textContent = name;
-  document.getElementById('modal-summary').textContent = parts.length ? 'Состав: ' + parts.join(', ') : 'Просто корж — брутальный выбор! 😄';
-  document.getElementById('modal-price').textContent = '💰 Итого: ' + price + ' ₽';
-  document.getElementById('modal-overlay').classList.add('show');
-}
-
-function closeModal() {
-  document.getElementById('modal-overlay').classList.remove('show');
-  showToast('🍕 Спасибо за заказ! Готовим...');
-}
-
-document.getElementById('modal-overlay').addEventListener('click', function(e) {
-  if (e.target === this) closeModal();
-});
-
-// ======================== TOAST ========================
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2800);
-}
-
-// Init
-renderPizza();
-updatePrice();
+ui();
 </script>
 </body>
 </html>
