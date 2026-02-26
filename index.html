@@ -4,10 +4,126 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#1a8fd1">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="WalkieTalkie">
+<meta name="application-name" content="WalkieTalkie">
+<meta name="description" content="Push-to-talk walkie talkie over the internet">
 <title>WalkieTalkie</title>
+
+<!-- PWA manifest injected as blob so it works from a single HTML file -->
+<script>
+(function(){
+  // Build manifest object — scope/start_url must match the page's actual origin+path
+  const base = location.origin + location.pathname.replace(/\/[^/]*$/, '/');
+  const manifest = {
+    name: 'WalkieTalkie',
+    short_name: 'WalkieTalkie',
+    description: 'Push-to-talk walkie talkie',
+    start_url: location.pathname + '?utm_source=pwa',
+    scope: location.pathname.replace(/\/[^/]*$/, '/') || '/',
+    display: 'standalone',
+    orientation: 'portrait',
+    background_color: '#1a8fd1',
+    theme_color: '#1a8fd1',
+    icons: [
+      { src: _makeIcon(192,'#1a8fd1'), sizes:'192x192', type:'image/png', purpose:'any maskable' },
+      { src: _makeIcon(512,'#1a8fd1'), sizes:'512x512', type:'image/png', purpose:'any maskable' }
+    ]
+  };
+
+  // Build simple icon as data URI
+  function _makeIcon(size, bg){
+    const c = document.createElement('canvas');
+    c.width = c.height = size;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0,0,size,size);
+    // Microphone icon
+    const s = size/4;
+    ctx.fillStyle = '#39ff14';
+    ctx.beginPath();
+    ctx.roundRect(size/2-s/2, size*0.15, s, s*1.4, s/2);
+    ctx.fill();
+    ctx.strokeStyle = '#39ff14';
+    ctx.lineWidth = size*0.05;
+    ctx.beginPath();
+    ctx.arc(size/2, size*0.55, s*0.85, Math.PI, 0);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(size/2, size*0.55+s*0.85);
+    ctx.lineTo(size/2, size*0.78);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(size/2-s*0.5, size*0.78);
+    ctx.lineTo(size/2+s*0.5, size*0.78);
+    ctx.stroke();
+    return c.toDataURL('image/png');
+  }
+
+  const blob = new Blob([JSON.stringify(manifest)], {type:'application/manifest+json'});
+  const url  = URL.createObjectURL(blob);
+  const link = document.createElement('link');
+  link.rel   = 'manifest';
+  link.href  = url;
+  document.currentScript.insertAdjacentElement('afterend', link);
+})();
+</script>
+
+<!-- Service Worker registration (enables PWA install + offline cache) -->
+<script>
+(function(){
+  if(!('serviceWorker' in navigator)) return;
+
+  // Inline SW as blob — caches the page itself so it opens offline
+  const swCode = `
+const CACHE = 'wt-v1';
+const SHELL = [self.registration.scope];
+
+self.addEventListener('install', e => {
+  e.waitUntil(
+    caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())
+  );
+});
+
+self.addEventListener('activate', e => {
+  e.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+    ).then(() => self.clients.claim())
+  );
+});
+
+// Network-first, fallback to cache
+self.addEventListener('fetch', e => {
+  if(e.request.method !== 'GET') return;
+  e.respondWith(
+    fetch(e.request)
+      .then(r => { const c = r.clone(); caches.open(CACHE).then(cache => cache.put(e.request, c)); return r; })
+      .catch(() => caches.match(e.request))
+  );
+});
+
+// Handle push-to-foreground when notification/link clicked
+self.addEventListener('notificationclick', e => { e.notification.close(); });
+`;
+
+  const swBlob = new Blob([swCode], {type: 'application/javascript'});
+  const swUrl  = URL.createObjectURL(swBlob);
+
+  navigator.serviceWorker.register(swUrl, {scope: './'})
+    .then(reg => {
+      console.log('[SW] registered scope:', reg.scope);
+    })
+    .catch(err => {
+      // Blob-URL SW is blocked in some browsers (Firefox, Safari) — silently ignore.
+      // The app still works; just won't cache for offline.
+      console.info('[SW] registration skipped (blob SW not supported):', err.message);
+    });
+})();
+</script>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.2/peerjs.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
@@ -39,7 +155,15 @@ body::before{
 /* top bar */
 .topbar{width:100%;display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-shrink:0;}
 .clock{font-size:13px;color:rgba(255,255,255,.85);letter-spacing:1px;}
-.pwrbtn{
+.install-btn{
+  width:34px;height:34px;border-radius:8px;cursor:pointer;
+  background:rgba(57,255,20,0.15);border:1.5px solid rgba(57,255,20,0.4);
+  color:var(--green);display:flex;align-items:center;justify-content:center;
+  transition:all .15s;box-shadow:0 0 8px rgba(57,255,20,.15);
+}
+.install-btn:active{transform:scale(.9);}
+.install-btn:hover{background:rgba(57,255,20,.25);}
+
   width:40px;height:40px;border-radius:50%;cursor:pointer;flex-shrink:0;
   background:radial-gradient(circle at 38% 32%,#484848,#111);
   border:2px solid #444;display:flex;align-items:center;justify-content:center;
@@ -229,7 +353,14 @@ body::before{
 <div class="device">
   <div class="topbar">
     <div class="clock" id="clock">00:00</div>
-    <div class="pwrbtn" id="pwrBtn"><div class="pwricon"></div></div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="install-btn" id="installBtn" style="display:none" onclick="installPWA()" title="Install app">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M12 2v13M7 11l5 5 5-5"/><rect x="3" y="18" width="18" height="3" rx="1"/>
+        </svg>
+      </button>
+      <div class="pwrbtn" id="pwrBtn"><div class="pwricon"></div></div>
+    </div>
   </div>
 
   <div class="lcd-panel">
@@ -654,13 +785,16 @@ function handleMsg(msg,fromPid){
 
     case'speaking':
       markSpeaking(msg.uid,msg.on);
-      broadcastExcept(msg,fromPid);
+      if(!msg._r)broadcastExcept(Object.assign({},msg,{_r:1}),fromPid);
       break;
 
     case'audio_chunk':
-    case'audio_end':
+    case'audio_done':
+      // Relay to others only if not already a relayed copy (prevents loops + duplicates)
+      if(!msg._r){
+        broadcastExcept(Object.assign({},msg,{_r:1}),fromPid);
+      }
       receiveChunk(msg);
-      broadcastExcept(msg,fromPid);  // relay
       break;
   }
 }
@@ -704,21 +838,29 @@ async function pttDown(e){
   catch(_){toast('Microphone access denied');return;}
 
   recording=true;audioChunks=[];
+
+  // Pick best supported mime type
   const mime=['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus','audio/mp4']
     .find(m=>MediaRecorder.isTypeSupported(m))||'';
 
   try{mediaRec=new MediaRecorder(stream,mime?{mimeType:mime}:{});}
   catch(_){mediaRec=new MediaRecorder(stream);}
 
-  mediaRec.ondataavailable=ev=>{if(ev.data&&ev.data.size>0)audioChunks.push(ev.data);};
+  mediaRec.ondataavailable=ev=>{
+    if(ev.data&&ev.data.size>0)audioChunks.push(ev.data);
+  };
+
   mediaRec.onstop=()=>{
     stream.getTracks().forEach(t=>t.stop());
     if(!audioChunks.length){recording=false;resetPTT();return;}
-    const blob=new Blob(audioChunks,{type:mediaRec.mimeType||'audio/webm'});
-    sendAudio(blob,mediaRec.mimeType||'audio/webm');
+    const finalMime=mediaRec.mimeType||mime||'audio/webm';
+    const blob=new Blob(audioChunks,{type:finalMime});
+    console.log('[WT] recorded blob',blob.size,'bytes mime=',finalMime);
+    sendAudio(blob,finalMime);
   };
 
-  mediaRec.start(200);
+  // timeslice=100ms gives frequent ondataavailable events
+  mediaRec.start(100);
   setPtt('tx');waveOn();
   broadcast({t:'speaking',uid:myId,on:true});
 }
@@ -727,61 +869,127 @@ function pttUp(e){
   if(e)e.preventDefault();
   if(!recording)return;
   recording=false;
-  if(mediaRec&&mediaRec.state!=='inactive')mediaRec.stop();
   broadcast({t:'speaking',uid:myId,on:false});
   setPtt('sending');setLbl('SEND...');
+
+  if(mediaRec&&mediaRec.state==='recording'){
+    // requestData flushes the last buffered chunk before stop fires onstop
+    try{mediaRec.requestData();}catch(_){}
+    mediaRec.stop();
+  }
 }
 
 async function sendAudio(blob,mime){
   try{
+    // FIX 1: safe large-buffer base64 that won't stack-overflow
     const ab=await blob.arrayBuffer();
-    const b64=ab2b64(ab);
-    const SZ=6000,total=Math.ceil(b64.length/SZ);
+    const b64=safeAb2b64(ab);
+    console.log('[WT] sending b64 length=',b64.length);
+
+    // FIX 2: unique msgId per transmission so reassembly keys never collide
+    const msgId=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+    const SZ=8000;  // larger chunks = fewer messages
+    const total=Math.ceil(b64.length/SZ)||1;
+
     showProg(true);
     for(let i=0;i<total;i++){
-      broadcast({t:'audio_chunk',i,total,d:b64.slice(i*SZ,(i+1)*SZ),mime});
+      broadcast({t:'audio_chunk',id:msgId,i,total,d:b64.slice(i*SZ,(i+1)*SZ),mime});
       setProg((i+1)/total);
-      await sleep(8);
+      // small yield so DataChannel isn't flooded
+      if(i%5===4)await sleep(10);
     }
-    broadcast({t:'audio_end',total,mime});
-  }catch(err){toast('Send error');console.error(err);}
+    broadcast({t:'audio_done',id:msgId,total,mime});
+    console.log('[WT] sent',total,'chunks');
+  }catch(err){toast('Send error');console.error('[WT] sendAudio err',err);}
   finally{showProg(false);resetPTT();}
 }
 
 /* ══════════════════════════════════════════════════════════
    RECEIVE AUDIO
 ══════════════════════════════════════════════════════════ */
+// FIX 3: keyed by unique msgId, with stale-buffer cleanup timeout
+const CHUNK_TIMEOUT_MS=20000;
+
 function receiveChunk(msg){
+  if(msg.t!=='audio_chunk'&&msg.t!=='audio_done')return;
+
+  const key=msg.id;
+  if(!key)return;
+
   if(msg.t==='audio_chunk'){
-    const key=msg.mime+'_'+msg.total;
-    if(!inbuf[key])inbuf[key]={chunks:{},total:msg.total,mime:msg.mime};
+    if(!inbuf[key]){
+      inbuf[key]={chunks:{},total:msg.total,mime:msg.mime,
+        timer:setTimeout(()=>{console.warn('[WT] chunk timeout, dropping',key);delete inbuf[key];},CHUNK_TIMEOUT_MS)
+      };
+    }
     inbuf[key].chunks[msg.i]=msg.d;
-    if(Object.keys(inbuf[key].chunks).length===inbuf[key].total){
+    const received=Object.keys(inbuf[key].chunks).length;
+    if(received===inbuf[key].total){
+      clearTimeout(inbuf[key].timer);
       const ic=inbuf[key];delete inbuf[key];
-      let b64='';for(let i=0;i<ic.total;i++)b64+=ic.chunks[i];
+      // reassemble in order
+      let b64='';
+      for(let i=0;i<ic.total;i++)b64+=ic.chunks[i]||'';
+      console.log('[WT] reassembled b64 length=',b64.length,'mime=',ic.mime);
+      playAudio(b64,ic.mime);
+    }
+  }
+  // audio_done: if we somehow missed the count-based trigger, try anyway
+  if(msg.t==='audio_done'&&inbuf[key]){
+    const ic=inbuf[key];
+    const received=Object.keys(ic.chunks).length;
+    if(received>0&&received>=ic.total*0.9){
+      clearTimeout(ic.timer);delete inbuf[key];
+      let b64='';
+      for(let i=0;i<ic.total;i++)b64+=ic.chunks[i]||'';
       playAudio(b64,ic.mime);
     }
   }
 }
 
+// FIX 4: robust playback — don't rely solely on oncanplaythrough
 function playAudio(b64,mime){
+  if(!b64||!b64.length){console.warn('[WT] empty b64, skip');return;}
   try{
-    const raw=atob(b64),arr=new Uint8Array(raw.length);
+    // safe base64 decode
+    const raw=atob(b64);
+    const arr=new Uint8Array(raw.length);
     for(let i=0;i<raw.length;i++)arr[i]=raw.charCodeAt(i);
     const url=URL.createObjectURL(new Blob([arr],{type:mime||'audio/webm'}));
+
     const audio=new Audio(url);
+    audio.preload='auto';
+
     setPtt('rx');waveOn();setLbl('RX...');
-    const play=()=>audio.play().catch(err=>{
-      console.warn('autoplay blocked:',err);
-      toast('Tap screen to hear audio');
-      const resume=()=>{audio.play();};
-      document.addEventListener('touchstart',resume,{once:true});
-      document.addEventListener('click',resume,{once:true});
-    });
-    audio.oncanplaythrough=play;
-    audio.onended=()=>{URL.revokeObjectURL(url);resetPTT();waveOff();};
-    audio.onerror=()=>{URL.revokeObjectURL(url);resetPTT();waveOff();};
-  }catch(err){toast('Audio error');console.error(err);resetPTT();}
+
+    const cleanup=()=>{URL.revokeObjectURL(url);resetPTT();waveOff();};
+
+    const tryPlay=()=>{
+      audio.play().catch(err=>{
+        console.warn('[WT] autoplay blocked:',err.name);
+        // Show tap-to-play hint; resume on next user interaction
+        toast('Tap anywhere to hear message');
+        const resume=()=>{
+          audio.play().catch(e=>console.warn('[WT] resume failed',e));
+          document.removeEventListener('touchstart',resume);
+          document.removeEventListener('click',resume);
+        };
+        document.addEventListener('touchstart',resume,{once:true});
+        document.addEventListener('click',resume,{once:true});
+      });
+    };
+
+    audio.onended=cleanup;
+    audio.onerror=e=>{console.error('[WT] audio onerror',e,audio.error);cleanup();toast('Playback error');};
+
+    // FIX: fire play on both events + immediately (blob URLs are often ready instantly)
+    audio.oncanplay=tryPlay;
+    audio.onloadeddata=tryPlay;
+    audio.load(); // explicitly kick off loading
+    // Also try right away after a short tick in case events already fired
+    setTimeout(()=>{if(audio.paused&&audio.readyState>=2)tryPlay();},80);
+
+  }catch(err){toast('Audio decode error');console.error('[WT] playAudio err',err);resetPTT();}
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -826,8 +1034,44 @@ function updateUI(){
 /* ══════════════════════════════════════════════════════════
    UTILS
 ══════════════════════════════════════════════════════════ */
-function ab2b64(ab){let s='';const b=new Uint8Array(ab);for(let i=0;i<b.byteLength;i++)s+=String.fromCharCode(b[i]);return btoa(s);}
+// Safe base64: chunked fromCharCode avoids stack overflow on large buffers
+function safeAb2b64(ab){
+  const bytes=new Uint8Array(ab),STEP=8192;
+  let s='';
+  for(let i=0;i<bytes.length;i+=STEP)
+    s+=String.fromCharCode.apply(null,bytes.subarray(i,i+STEP));
+  return btoa(s);
+}
+function ab2b64(ab){return safeAb2b64(ab);}
 function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+/* ══════════════════════════════════════════════════════════
+   PWA INSTALL PROMPT
+══════════════════════════════════════════════════════════ */
+let _deferredInstall = null;
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _deferredInstall = e;
+  document.getElementById('installBtn').style.display = 'flex';
+  console.log('[PWA] install prompt ready');
+});
+
+window.addEventListener('appinstalled', () => {
+  _deferredInstall = null;
+  document.getElementById('installBtn').style.display = 'none';
+  toast('App installed!');
+});
+
+function installPWA(){
+  if(!_deferredInstall){ toast('Use browser menu → Add to Home Screen'); return; }
+  _deferredInstall.prompt();
+  _deferredInstall.userChoice.then(result => {
+    if(result.outcome==='accepted') toast('Installing...');
+    _deferredInstall = null;
+    document.getElementById('installBtn').style.display = 'none';
+  });
+}
 
 /* ══════════════════════════════════════════════════════════
    POWER BUTTON
@@ -873,23 +1117,50 @@ window.addEventListener('load',async()=>{
   const finalTok=tok||pending;
 
   if(finalTok){
-    // Pre-fill join modal
+    // Set freq first if provided
     if(freq&&/^\d{4}$/.test(freq)){
-      // Set freq silently (no need to disconnect yet since we're fresh)
       currentFreq=freq;
       document.getElementById('freqDisp').textContent=freq;
       await startPeer();
       setStatus('READY');updateUI();
     }
-    // Auto-open join modal with token pre-filled
+    // Auto-open join modal with token pre-filled and auto-connect
     document.getElementById('joinInput').value=finalTok.toUpperCase();
     document.getElementById('joinHint').textContent='Ready — tap Connect';
     openOv('joinOv');
+
+    // If freq is set, auto-connect after a short delay so user sees what's happening
+    if(freq&&/^\d{4}$/.test(freq)){
+      setTimeout(async()=>{
+        closeOv('joinOv');
+        setStatus('CONN...');
+        await startPeer();
+        const hostId=peerIdFromToken(finalTok);
+        console.log('[WT] auto-joining host:',hostId);
+        try{
+          await connectTo(hostId);
+          setStatus('OPEN');toast('Connected!');updateUI();
+        }catch(err){
+          console.error('[WT] auto-join failed:',err);
+          // Re-open modal so user can try manually
+          document.getElementById('joinInput').value=finalTok.toUpperCase();
+          document.getElementById('joinHint').textContent='Tap Connect to retry';
+          openOv('joinOv');
+          setStatus('READY');
+        }
+      }, 1200);
+    }
   } else if(freq&&/^\d{4}$/.test(freq)){
     currentFreq=freq;
     document.getElementById('freqDisp').textContent=freq;
     await startPeer();
     setStatus('READY');updateUI();
+  }
+
+  // If launched as installed PWA (standalone/fullscreen), read URL from
+  // window.location since navigator doesn't expose launch queue widely yet
+  if(window.matchMedia('(display-mode: standalone)').matches || navigator.standalone){
+    console.log('[WT] Running as installed PWA');
   }
 });
 </script>
