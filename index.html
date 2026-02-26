@@ -2,737 +2,1374 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>ПРОКАЧАЙ НОСТАЛЬГИЮ</title>
-<link href="https://fonts.googleapis.com/css2?family=Russo+One&family=Oswald:wght@400;700&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1a8fd1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="WalkieTalkie">
+<title>WalkieTalkie PWA</title>
+<link rel="manifest" href="data:application/json,{&quot;name&quot;:&quot;WalkieTalkie&quot;,&quot;short_name&quot;:&quot;WalkieTalkie&quot;,&quot;start_url&quot;:&quot;.&quot;,&quot;display&quot;:&quot;standalone&quot;,&quot;background_color&quot;:&quot;#1a8fd1&quot;,&quot;theme_color&quot;:&quot;#1a8fd1&quot;}">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.2/peerjs.min.js"></script>
 <style>
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
 
-:root {
-  --yellow: #ffd700;
-  --green: #00e600;
-  --orange: #ff6b00;
-  --purple: #7b2fbf;
-  --dark-purple: #3a1060;
-  --bg: linear-gradient(160deg, #ff2d9b 0%, #cc00aa 45%, #7b2fbf 100%);
-  --panel: rgba(40,8,80,0.78);
-}
+  :root {
+    --blue: #1a8fd1;
+    --blue-dark: #1270a8;
+    --blue-light: #2ba8f0;
+    --green: #39ff14;
+    --green-dark: #1db800;
+    --lcd-bg: #1a3a00;
+    --lcd-text: #39ff14;
+    --btn-bg: #2c2c2e;
+    --btn-hover: #3a3a3c;
+    --yellow: #ffd60a;
+    --red: #ff3b30;
+    --white: #ffffff;
+    --shadow: rgba(0,0,0,0.4);
+  }
 
-html, body {
-  height: 100%;
-  font-family: 'Russo One', sans-serif;
-  background: var(--bg);
-  background-attachment: fixed;
-  overflow-x: hidden;
-  color: white;
-}
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-body::before {
-  content: '';
-  position: fixed; inset: 0;
-  background-image: radial-gradient(circle, rgba(255,255,255,.07) 1.5px, transparent 1.5px);
-  background-size: 28px 28px;
-  pointer-events: none; z-index: 0;
-}
+  body {
+    background: var(--blue);
+    font-family: 'Share Tech Mono', monospace;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow: hidden;
+    position: relative;
+  }
 
-/* ─── SHELL ─── */
-.shell {
-  position: relative; z-index: 1;
-  max-width: 960px; margin: 0 auto;
-  min-height: 100dvh;
-  display: flex; flex-direction: column;
-  padding-bottom: env(safe-area-inset-bottom, 0);
-}
+  /* Subtle dot texture background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px);
+    background-size: 18px 18px;
+    pointer-events: none;
+  }
 
-/* ─── TOP BAR ─── */
-.topbar {
-  display: flex; align-items: center; gap: 6px;
-  padding: 8px 10px;
-  background: rgba(0,0,0,.25);
-  border-bottom: 2px solid rgba(255,215,0,.2);
-  flex-shrink: 0;
-}
+  .device {
+    width: 100%;
+    max-width: 360px;
+    min-height: 100vh;
+    background: linear-gradient(160deg, #2199d8 0%, #1580bd 40%, #0e6a9e 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 20px 40px;
+    position: relative;
+    box-shadow: inset 0 0 60px rgba(0,0,0,0.15);
+  }
 
-.player-card {
-  display: flex; align-items: center; gap: 6px;
-  background: rgba(0,0,0,.3); border: 2px solid var(--yellow);
-  border-radius: 12px; padding: 4px 8px;
-}
+  /* Power button */
+  .power-btn {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 40% 35%, #444, #111);
+    border: 2px solid #555;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,255,255,0.1);
+    transition: transform 0.1s;
+  }
+  .power-btn:active { transform: scale(0.93); }
+  .power-icon {
+    width: 20px;
+    height: 20px;
+    border: 2.5px solid var(--green);
+    border-radius: 50%;
+    border-top-color: transparent;
+    position: relative;
+    box-shadow: 0 0 8px var(--green);
+  }
+  .power-icon::after {
+    content: '';
+    position: absolute;
+    top: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2.5px;
+    height: 8px;
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green);
+  }
 
-.avatar {
-  width: 36px; height: 36px; border-radius: 50%;
-  border: 2px solid var(--yellow);
-  background: linear-gradient(135deg,#333,#666);
-  font-size: 20px; display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
+  /* Status bar inside device */
+  .device-status {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+    padding: 4px 2px;
+  }
+  .device-time {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    color: rgba(255,255,255,0.85);
+    letter-spacing: 1px;
+  }
 
-.score-badge {
-  background: var(--yellow); color: #000;
-  font-size: clamp(11px,3.4vw,17px); font-weight: 900;
-  padding: 2px 10px; border-radius: 20px; white-space: nowrap;
-}
+  /* LCD Display */
+  .lcd-panel {
+    width: 100%;
+    background: #0d0d0d;
+    border-radius: 12px;
+    padding: 10px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.6), inset 0 2px 4px rgba(0,0,0,0.8);
+    border: 2px solid #111;
+    margin-bottom: 6px;
+  }
 
-.rank {
-  color: rgba(255,255,255,.65); font-size: clamp(8px,2vw,10px);
-  margin-top: 2px; font-family: 'Oswald',sans-serif; white-space: nowrap;
-}
+  .lcd-screen {
+    background: var(--lcd-bg);
+    border-radius: 6px;
+    padding: 10px 14px;
+    position: relative;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.5), 0 0 20px rgba(57,255,20,0.15);
+    min-height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    overflow: hidden;
+  }
 
-.title-logo { flex: 1; text-align: center; min-width: 0; padding: 0 4px; }
+  /* LCD scanlines */
+  .lcd-screen::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px);
+    pointer-events: none;
+    border-radius: 6px;
+  }
 
-.title-logo .sub {
-  font-family: 'Oswald',sans-serif; color: rgba(255,255,255,.65);
-  font-size: clamp(7px,1.8vw,10px); letter-spacing: 3px; display: block;
-}
+  .lcd-freq {
+    font-family: 'Orbitron', monospace;
+    font-size: 44px;
+    font-weight: 900;
+    color: var(--lcd-text);
+    letter-spacing: 4px;
+    text-shadow: 0 0 10px var(--green), 0 0 30px rgba(57,255,20,0.5);
+    line-height: 1;
+    cursor: pointer;
+    user-select: none;
+    min-width: 180px;
+  }
 
-.title-logo .main {
-  font-size: clamp(12px,3.2vw,22px);
-  text-shadow: 2px 2px 0 #7b2fbf, -1px -1px 0 rgba(0,0,0,.4);
-  line-height: 1.1; white-space: nowrap;
-}
-.title-logo .main span { color: var(--yellow); }
+  .lcd-freq.editing {
+    animation: blink-cursor 0.8s step-end infinite;
+  }
 
-.coins-block {
-  display: flex; align-items: center; gap: 4px;
-  background: rgba(0,0,0,.3); border: 2px solid var(--yellow);
-  border-radius: 12px; padding: 4px 8px; flex-shrink: 0;
-}
+  @keyframes blink-cursor {
+    50% { opacity: 0.6; }
+  }
 
-.coin-icon { font-size: 18px; }
-.coin-count { font-size: clamp(13px,3.4vw,17px); font-weight: 900; min-width: 26px; }
+  .lcd-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+  }
 
-.add-btn {
-  background: var(--green); border: none; border-radius: 50%;
-  width: 28px; height: 28px; font-size: 18px; font-weight: 900;
-  cursor: pointer; color: white;
-  display: flex; align-items: center; justify-content: center;
-  transition: transform .1s; flex-shrink: 0;
-}
-.add-btn:active { transform: scale(.88); }
+  .lcd-count {
+    font-family: 'Orbitron', monospace;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--lcd-text);
+    text-shadow: 0 0 8px var(--green);
+  }
 
-.promo-badge {
-  background: linear-gradient(135deg,#ff2200,#ff6600);
-  color: white; font-size: 10px; padding: 2px 6px;
-  border-radius: 20px; border: 1.5px solid var(--yellow);
-  white-space: nowrap; flex-shrink: 0;
-}
+  .lcd-status {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--green-dark);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
 
-/* ─── CONTENT GRID ─── */
-.content-area {
-  flex: 1; display: grid;
-  grid-template-columns: 1fr 310px;
-  gap: 10px; padding: 10px;
-  align-items: start;
-  overflow-y: auto;
-}
+  .lcd-status.active {
+    color: var(--lcd-text);
+    text-shadow: 0 0 6px var(--green);
+    animation: pulse-text 1s ease-in-out infinite;
+  }
 
-/* ─── CLICKER COLUMN ─── */
-.clicker-col {
-  display: flex; flex-direction: column;
-  align-items: center; gap: 10px; padding-bottom: 10px;
-}
+  @keyframes pulse-text {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
 
-.star-score {
-  display: flex; align-items: center; gap: 8px;
-  font-size: clamp(28px,6vw,48px); font-weight: 900;
-  text-shadow: 3px 3px 0 rgba(0,0,0,.35);
-}
+  /* Control buttons row */
+  .controls-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    width: 100%;
+    padding: 8px 0 2px;
+  }
 
-.star-icon { filter: drop-shadow(0 0 8px gold); }
+  .ctrl-btn {
+    background: linear-gradient(160deg, #3a3a3c, #232325);
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 10px 4px 8px;
+    cursor: pointer;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08);
+    transition: all 0.1s;
+    -webkit-user-select: none;
+    user-select: none;
+    position: relative;
+    overflow: hidden;
+  }
 
-.per-sec {
-  font-family: 'Oswald',sans-serif;
-  font-size: clamp(13px,3vw,16px);
-  color: rgba(255,255,255,.85); letter-spacing: 1px;
-}
-.per-sec span { color: var(--green); font-size: 1.25em; font-weight: 700; }
+  .ctrl-btn:active, .ctrl-btn.pressed {
+    transform: scale(0.94) translateY(1px);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+    background: linear-gradient(160deg, #232325, #1a1a1c);
+  }
 
-.clicker-ring {
-  width: clamp(190px,50vw,300px); height: clamp(190px,50vw,300px);
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, #ffeb80 0%,#ffa500 40%,#ff6600 70%,#cc3300 100%);
-  box-shadow: 0 0 0 6px rgba(255,165,0,.3), 0 0 0 14px rgba(255,165,0,.14),
-              0 0 55px rgba(255,100,0,.5), inset 0 -15px 35px rgba(0,0,0,.2);
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; user-select: none;
-  transition: transform .08s;
-  animation: ring-pulse 3s ease-in-out infinite;
-  touch-action: manipulation;
-}
+  .ctrl-btn svg {
+    width: 20px;
+    height: 20px;
+  }
 
-@keyframes ring-pulse {
-  0%,100% { box-shadow: 0 0 0 6px rgba(255,165,0,.3),0 0 0 14px rgba(255,165,0,.14),0 0 55px rgba(255,100,0,.5),inset 0 -15px 35px rgba(0,0,0,.2); }
-  50%      { box-shadow: 0 0 0 10px rgba(255,165,0,.4),0 0 0 22px rgba(255,165,0,.2),0 0 75px rgba(255,100,0,.7),inset 0 -15px 35px rgba(0,0,0,.2); }
-}
+  .ctrl-btn span {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: #aaa;
+    letter-spacing: 0.5px;
+  }
 
-.clicker-ring:active { transform: scale(.91); }
+  /* Frequency input hidden */
+  #freq-input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    width: 1px;
+    height: 1px;
+  }
 
-.sneaker {
-  font-size: clamp(70px,18vw,120px);
-  filter: drop-shadow(0 8px 16px rgba(0,0,0,.4));
-  pointer-events: none;
-}
+  /* Separator */
+  .divider {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+    margin: 20px 0 16px;
+  }
 
-.progress-wrap {
-  width: min(90%,300px);
-  background: rgba(0,0,0,.3); border-radius: 10px;
-  height: 14px; border: 2px solid rgba(255,255,255,.25); overflow: hidden;
-}
+  /* Speaker grille */
+  .speaker-area {
+    width: 100%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    gap: 24px;
+    padding: 10px 0 20px;
+  }
 
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg,var(--yellow),var(--orange));
-  border-radius: 8px; transition: width .3s ease;
-}
+  .speaker-grille {
+    display: grid;
+    grid-template-rows: repeat(7, 1fr);
+    gap: 10px;
+    width: 100%;
+    max-width: 260px;
+  }
 
-.level-info {
-  font-family: 'Oswald',sans-serif; color: rgba(255,255,255,.6);
-  font-size: clamp(11px,2.5vw,13px); text-align: center; padding: 0 10px;
-}
+  .grille-row {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+  }
 
-.upgrade-btn {
-  background: linear-gradient(180deg,#ffd700,#ff9000);
-  color: #000; border: none; border-radius: 14px;
-  padding: 13px 28px;
-  font-family: 'Russo One',sans-serif;
-  font-size: clamp(14px,3.5vw,18px);
-  cursor: pointer; text-transform: uppercase; letter-spacing: .5px;
-  box-shadow: 0 5px 0 #aa5500, 0 7px 18px rgba(0,0,0,.3);
-  transition: all .1s; width: min(88%,300px);
-  touch-action: manipulation;
-}
-.upgrade-btn:hover  { filter: brightness(1.08); }
-.upgrade-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #aa5500; }
-.upgrade-btn:disabled {
-  background: linear-gradient(180deg,#888,#555);
-  color: #333; box-shadow: 0 4px 0 #333; cursor: not-allowed;
-}
+  .grille-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.35);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+    transition: background 0.1s, box-shadow 0.1s;
+  }
 
-.obj-stars {
-  font-family: 'Oswald',sans-serif;
-  font-size: clamp(13px,3vw,15px); color: rgba(255,255,255,.8);
-}
+  .grille-dot.active {
+    background: rgba(57,255,20,0.6);
+    box-shadow: 0 0 4px var(--green);
+  }
 
-/* click particle */
-.click-particle {
-  position: fixed;
-  font-family: 'Russo One',sans-serif; font-size: 22px; font-weight: 900;
-  color: var(--yellow); text-shadow: 2px 2px 0 #000;
-  pointer-events: none;
-  animation: flyup .8s ease-out forwards;
-  z-index: 9999; transform: translateX(-50%);
-}
-@keyframes flyup {
-  from { opacity:1; transform:translateX(-50%) translateY(0) scale(1); }
-  to   { opacity:0; transform:translateX(-50%) translateY(-72px) scale(1.4); }
-}
+  /* PTT Button */
+  .ptt-container {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
 
-/* ─── RIGHT PANEL ─── */
-.right-panel {
-  background: var(--panel);
-  border: 3px solid rgba(255,215,0,.35);
-  border-radius: 20px; overflow: hidden;
-  backdrop-filter: blur(8px);
-}
+  .ptt-label {
+    font-family: 'Orbitron', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.7);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
 
-.panel-duck-row {
-  display: flex; align-items: center; gap: 8px;
-  padding: 10px 14px; background: rgba(0,0,0,.2);
-}
+  /* Speaker dots with PTT label overlay */
+  .speaker-wrapper {
+    position: relative;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
 
-.duck-av {
-  width: 40px; height: 40px; border-radius: 50%;
-  background: linear-gradient(135deg,#ffd700,#ff9000);
-  border: 2.5px solid var(--yellow);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 22px; flex-shrink: 0;
-}
+  .ptt-overlay-label {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.75);
+    letter-spacing: 3px;
+    pointer-events: none;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    white-space: nowrap;
+  }
 
-.panel-title {
-  font-size: clamp(14px,3.5vw,18px); color: var(--yellow);
-  text-shadow: 2px 2px 0 rgba(0,0,0,.35);
-}
+  /* Big PTT button */
+  .ptt-btn {
+    width: 160px;
+    height: 60px;
+    border-radius: 30px;
+    background: linear-gradient(160deg, #1f6fb5, #0d4f85);
+    border: 3px solid rgba(255,255,255,0.2);
+    color: white;
+    font-family: 'Orbitron', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.15), 0 0 0 0 rgba(57,255,20,0);
+    transition: all 0.15s;
+    -webkit-user-select: none;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    position: relative;
+    overflow: hidden;
+  }
 
-.boosters-row {
-  display: flex; gap: 8px; padding: 8px 12px 12px; flex-wrap: wrap;
-}
+  .ptt-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 28px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.1) 0%, transparent 60%);
+  }
 
-.booster-item {
-  display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer;
-}
+  .ptt-btn:active, .ptt-btn.transmitting {
+    background: linear-gradient(160deg, #25a855, #156b35);
+    border-color: var(--green);
+    box-shadow: 0 3px 10px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.1), 0 0 20px rgba(57,255,20,0.4);
+    transform: scale(0.97) translateY(2px);
+  }
 
-.booster-btn {
-  width: 52px; height: 52px; border-radius: 12px;
-  border: 2.5px solid rgba(255,255,255,.3);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 24px; cursor: pointer;
-  transition: transform .12s; touch-action: manipulation;
-}
-.booster-btn:active { transform: scale(.86); }
-.booster-btn.blue { background: linear-gradient(135deg,#2255ff,#0088ff); }
-.booster-btn.red  { background: linear-gradient(135deg,#cc2200,#ff5500); }
-.booster-btn.teal { background: linear-gradient(135deg,#007755,#00cc88); }
-.booster-btn.grn  { background: linear-gradient(135deg,#448800,#88dd00); }
+  .ptt-btn.receiving {
+    background: linear-gradient(160deg, #b55a00, #8a3d00);
+    border-color: #ff9500;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.4), 0 0 20px rgba(255,149,0,0.4);
+    animation: receiving-pulse 0.5s ease-in-out infinite;
+  }
 
-.booster-label {
-  font-family: 'Oswald',sans-serif; font-size: 9px;
-  color: rgba(255,255,255,.75); text-align: center; max-width: 56px;
-}
-.booster-label.gold { color: var(--yellow); }
+  @keyframes receiving-pulse {
+    0%, 100% { box-shadow: 0 3px 10px rgba(0,0,0,0.4), 0 0 20px rgba(255,149,0,0.3); }
+    50% { box-shadow: 0 3px 10px rgba(0,0,0,0.4), 0 0 40px rgba(255,149,0,0.6); }
+  }
 
-.section-head {
-  font-size: clamp(14px,3.5vw,18px); color: var(--yellow);
-  padding: 8px 14px 4px;
-  text-shadow: 2px 2px 0 rgba(0,0,0,.35);
-  border-top: 2px solid rgba(255,255,255,.1);
-}
+  .ptt-icon {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+  }
 
-.generators { padding-bottom: 6px; }
+  /* Toast / notification */
+  .toast {
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-80px);
+    background: rgba(0,0,0,0.85);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 1px;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: 100;
+    white-space: nowrap;
+    border: 1px solid rgba(255,255,255,0.1);
+    backdrop-filter: blur(10px);
+  }
 
-.gen-item {
-  display: flex; align-items: center; gap: 8px;
-  margin: 5px 8px; background: rgba(255,255,255,.06);
-  border-radius: 12px; padding: 8px 10px;
-  cursor: pointer; border: 2px solid transparent;
-  transition: background .15s, border-color .15s;
-  touch-action: manipulation;
-}
-.gen-item:active:not(.locked) { background: rgba(255,255,255,.16); border-color: rgba(255,215,0,.5); }
-.gen-item.locked { opacity: .46; cursor: not-allowed; }
+  .toast.show {
+    transform: translateX(-50%) translateY(0);
+  }
 
-.gen-icon {
-  width: 42px; height: 42px; border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 24px; flex-shrink: 0;
-}
-.gen-icon.y  { background: linear-gradient(135deg,#ffd700,#ff9000); }
-.gen-icon.lk { background: linear-gradient(135deg,#553399,#7744bb); }
+  /* Peer list */
+  .peer-list {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-height: 48px;
+  }
 
-.gen-info { flex: 1; min-width: 0; }
-.gen-name { font-size: clamp(11px,2.5vw,13px); color: var(--orange); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.gen-name.lk { color: #998; }
-.gen-cost { font-family: 'Oswald',sans-serif; font-size: clamp(9px,2.2vw,11px); color: rgba(255,255,255,.6); margin-top: 2px; }
+  .peer-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: rgba(0,0,0,0.2);
+    border-radius: 8px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.8);
+    letter-spacing: 1px;
+  }
 
-.gen-count { font-size: clamp(18px,4vw,22px); font-weight: 900; min-width: 26px; text-align: right; flex-shrink: 0; }
-.gen-count.lk { font-size: 9px; color: #998; line-height: 1.3; }
+  .peer-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green);
+    flex-shrink: 0;
+  }
 
-.shop-banner {
-  background: linear-gradient(90deg,#009900,#006600);
-  padding: 9px; text-align: center;
-  font-size: clamp(12px,2.5vw,14px); color: var(--yellow);
-  letter-spacing: 1px; border-top: 3px solid var(--yellow);
-}
+  .peer-item.speaking .peer-dot {
+    background: var(--yellow);
+    box-shadow: 0 0 6px var(--yellow);
+    animation: speaking-blink 0.4s step-end infinite;
+  }
 
-/* ─── BOTTOM BANNER (desktop) ─── */
-.bottom-banner {
-  background: linear-gradient(90deg,#009900,#006600);
-  padding: 12px 16px; text-align: center;
-  font-size: clamp(15px,4vw,26px); color: var(--yellow);
-  text-shadow: 3px 3px 0 rgba(0,0,0,.4); letter-spacing: 2px;
-  text-transform: uppercase;
-  border-top: 4px solid var(--yellow); flex-shrink: 0;
-  animation: bglow 2s ease-in-out infinite;
-}
-@keyframes bglow {
-  0%,100% { box-shadow: inset 0 0 20px rgba(255,215,0,.15); }
-  50%      { box-shadow: inset 0 0 40px rgba(255,215,0,.35); }
-}
+  @keyframes speaking-blink {
+    50% { opacity: 0.3; }
+  }
 
-/* ─── MOBILE BOTTOM NAV ─── */
-.mob-nav {
-  display: none; position: fixed; bottom: 0; left: 0; right: 0;
-  background: rgba(15,3,40,.97); border-top: 3px solid var(--yellow);
-  z-index: 50; padding-bottom: env(safe-area-inset-bottom,0);
-}
-.mob-nav-inner { display: flex; }
-.mob-tab {
-  flex: 1; padding: 10px 4px 8px; text-align: center;
-  cursor: pointer; border: none; background: transparent;
-  color: rgba(255,255,255,.5); font-family: 'Russo One',sans-serif;
-  font-size: 10px; display: flex; flex-direction: column;
-  align-items: center; gap: 3px; transition: color .15s;
-  touch-action: manipulation;
-}
-.mob-tab .ti { font-size: 22px; display: block; }
-.mob-tab.active { color: var(--yellow); }
-.mob-tab.active .ti { filter: drop-shadow(0 0 6px gold); }
+  /* Channel section */
+  .channel-section {
+    width: 100%;
+    padding: 0 2px;
+  }
 
-/* ─── MODAL ─── */
-.modal-overlay {
-  display: none; position: fixed; inset: 0;
-  background: rgba(0,0,0,.72); z-index: 100;
-  align-items: center; justify-content: center;
-}
-.modal-overlay.active { display: flex; }
-.modal-box {
-  background: linear-gradient(135deg,#7b2fbf,#3a1060);
-  border: 4px solid var(--yellow); border-radius: 20px;
-  padding: 28px 22px; text-align: center; width: min(320px,92vw);
-  animation: pop-in .2s ease;
-}
-@keyframes pop-in { from{transform:scale(.85);opacity:0} to{transform:scale(1);opacity:1} }
-.modal-box h2 { color: var(--yellow); font-size: 20px; margin-bottom: 8px; }
-.modal-box p  { font-family:'Oswald',sans-serif; font-size:15px; margin-bottom:14px; color:rgba(255,255,255,.9); }
-.modal-big { font-size: 40px; margin-bottom: 18px; }
-.modal-btns { display: flex; gap: 10px; justify-content: center; }
-.modal-btn { padding: 10px 22px; border: none; border-radius: 10px; font-family:'Russo One',sans-serif; font-size:15px; cursor:pointer; touch-action:manipulation; }
-.modal-btn.confirm { background: var(--yellow); color: #000; }
-.modal-btn.cancel  { background: rgba(255,255,255,.18); color: white; }
+  .channel-label {
+    font-size: 10px;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 2px;
+    margin-bottom: 4px;
+  }
 
-/* ─── RESPONSIVE ─── */
-@media (max-width: 780px) {
-  .content-area { grid-template-columns: 1fr 260px; gap: 8px; padding: 8px; }
-  .booster-btn { width: 46px; height: 46px; font-size: 21px; }
-}
+  /* Empty state */
+  .empty-peers {
+    font-size: 11px;
+    color: rgba(255,255,255,0.35);
+    letter-spacing: 1px;
+    text-align: center;
+    padding: 10px;
+  }
 
-@media (max-width: 600px) {
-  /* Stack: one column, bottom tabs */
-  .content-area { display: block; padding: 8px 8px 76px; }
-  .right-panel  { display: none; }
-  .right-panel.mob-active   { display: block; }
-  .clicker-col  { display: none; }
-  .clicker-col.mob-active   { display: flex; }
-  .mob-nav { display: block; }
-  .bottom-banner { display: none; }
-  .title-logo .sub { display: none; }
-  .promo-badge { display: none; }
-  /* bigger ring on phone */
-  .clicker-ring { width: min(74vw,290px); height: min(74vw,290px); }
-  .sneaker { font-size: min(30vw,115px); }
-}
+  /* Numpad overlay */
+  .numpad-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 200;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+    backdrop-filter: blur(4px);
+  }
 
-@media (max-width: 380px) {
-  .topbar { padding: 5px 6px; gap: 4px; }
-  .avatar { width: 28px; height: 28px; font-size: 16px; }
-  .score-badge { font-size: 10px; padding: 2px 7px; }
-  .coin-icon { font-size: 15px; }
-  .add-btn { width: 24px; height: 24px; font-size: 14px; }
-}
+  .numpad-overlay.open {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .numpad {
+    background: linear-gradient(180deg, #1c1c1e, #111113);
+    border-radius: 20px 20px 0 0;
+    padding: 20px 16px 40px;
+    width: 100%;
+    max-width: 360px;
+    box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+  }
+
+  .numpad-display {
+    font-family: 'Orbitron', monospace;
+    font-size: 42px;
+    font-weight: 900;
+    color: var(--lcd-text);
+    text-align: center;
+    letter-spacing: 8px;
+    text-shadow: 0 0 10px var(--green);
+    margin-bottom: 20px;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .numpad-title {
+    text-align: center;
+    color: rgba(255,255,255,0.5);
+    font-size: 12px;
+    letter-spacing: 3px;
+    margin-bottom: 16px;
+    text-transform: uppercase;
+  }
+
+  .numpad-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .num-btn {
+    background: linear-gradient(160deg, #2c2c2e, #1c1c1e);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-family: 'Orbitron', monospace;
+    font-size: 24px;
+    font-weight: 700;
+    height: 64px;
+    cursor: pointer;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06);
+    transition: all 0.1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  .num-btn:active {
+    transform: scale(0.94);
+    background: linear-gradient(160deg, #3a3a3c, #2c2c2e);
+  }
+
+  .num-btn.del {
+    font-size: 18px;
+    color: #ff453a;
+    letter-spacing: 0;
+  }
+
+  .num-btn.confirm {
+    background: linear-gradient(160deg, #1d7a3d, #0d5227);
+    color: var(--green);
+    letter-spacing: 0;
+    font-size: 14px;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.4), 0 0 10px rgba(57,255,20,0.2);
+  }
+
+  .num-btn.confirm:active {
+    background: linear-gradient(160deg, #25a855, #156b35);
+  }
+
+  /* Signal animation on speaker dots */
+  @keyframes dot-wave {
+    0%, 100% { background: rgba(0,0,0,0.35); }
+    50% { background: rgba(57,255,20,0.5); }
+  }
+
 </style>
 </head>
 <body>
-<div class="shell">
 
-  <!-- TOP BAR -->
-  <header class="topbar">
-    <div class="player-card">
-      <div class="avatar">🐧</div>
-      <div>
-        <div class="score-badge" id="topScore">⭐ 2 304</div>
-        <div class="rank" id="rankDisplay">Вы на 788 месте</div>
+<div class="device">
+  <!-- Status bar -->
+  <div class="device-status">
+    <div class="device-time" id="clock">00:00</div>
+    <div class="power-btn" id="powerBtn">
+      <div class="power-icon"></div>
+    </div>
+  </div>
+
+  <!-- LCD Panel -->
+  <div class="lcd-panel">
+    <div class="lcd-screen">
+      <div class="lcd-freq" id="freqDisplay" onclick="openNumpad()">----</div>
+      <div class="lcd-info">
+        <div class="lcd-count" id="peerCount">0</div>
+        <div class="lcd-status" id="statusLabel">OFFLINE</div>
       </div>
     </div>
 
-    <div class="title-logo">
-      <span class="sub">ТАКАЯ ВОТ</span>
-      <div class="main"><span>ВЕЧНАЯ</span> МОЛОДОСТЬ</div>
-    </div>
-
-    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0">
-      <div class="coins-block">
-        <span class="coin-icon">🪙</span>
-        <span class="coin-count" id="coinCount">0</span>
-        <button class="add-btn" onclick="openModal()">+</button>
-      </div>
-      <span class="promo-badge">Акция ×3</span>
-    </div>
-  </header>
-
-  <!-- CONTENT -->
-  <div class="content-area">
-
-    <!-- CLICKER -->
-    <div class="clicker-col mob-active" id="clickerCol">
-      <div class="star-score"><span class="star-icon">⭐</span><span id="mainScore">2 301</span></div>
-      <div class="per-sec">В секунду:&nbsp;<span id="perSec">+0</span></div>
-
-      <div class="clicker-ring" id="clickerRing">
-        <span class="sneaker">👟</span>
-      </div>
-
-      <div class="progress-wrap">
-        <div class="progress-fill" id="progressFill" style="width:40%"></div>
-      </div>
-      <div class="level-info" id="levelInfo">До следующего уровня: 699 ⭐</div>
-
-      <button class="upgrade-btn" id="upgradeBtn" onclick="upgrade()">Увеличить уровень</button>
-      <div class="obj-stars">⭐ Объект уровня <span id="objLevel">35</span></div>
-    </div>
-
-    <!-- SHOP / RIGHT PANEL -->
-    <div class="right-panel" id="shopPanel">
-      <div class="panel-duck-row">
-        <div class="duck-av">🦆</div>
-        <span class="panel-title">Бустеры</span>
-        <span style="margin-left:auto;opacity:.5;font-size:13px">▶</span>
-      </div>
-
-      <div class="boosters-row">
-        <div class="booster-item" onclick="activateBooster('quiz')">
-          <div class="booster-btn blue">❓</div>
-        </div>
-        <div class="booster-item">
-          <div class="booster-btn red">👑</div>
-          <div class="booster-label gold">4.12 ФМ</div>
-        </div>
-        <div class="booster-item" onclick="activateBooster('percent')">
-          <div class="booster-btn teal">%</div>
-          <div class="booster-label gold">12000 🪙</div>
-        </div>
-        <div class="booster-item" onclick="activateBooster('up')">
-          <div class="booster-btn grn">⬆️</div>
-          <div class="booster-label">беспл.</div>
-        </div>
-      </div>
-
-      <div class="section-head">Генераторы</div>
-      <div class="generators">
-
-        <div class="gen-item" id="gen1" onclick="buyGenerator(1)">
-          <div class="gen-icon y">🐓</div>
-          <div class="gen-info">
-            <div class="gen-name">Петушок на палке</div>
-            <div class="gen-cost">⭐ <span id="gen1Cost">15</span> · +1/сек</div>
-          </div>
-          <div class="gen-count" id="gen1Count">0</div>
-        </div>
-
-        <div class="gen-item" id="gen2" onclick="buyGenerator(2)">
-          <div class="gen-icon y">🎮</div>
-          <div class="gen-info">
-            <div class="gen-name">Денди</div>
-            <div class="gen-cost">⭐ <span id="gen2Cost">80</span> · +5/сек</div>
-          </div>
-          <div class="gen-count" id="gen2Count">0</div>
-        </div>
-
-        <div class="gen-item locked" id="gen3">
-          <div class="gen-icon lk">❓</div>
-          <div class="gen-info"><div class="gen-name lk">???</div></div>
-          <div class="gen-count lk">Нужен<br>ур. 3</div>
-        </div>
-
-        <div class="gen-item locked" id="gen4">
-          <div class="gen-icon lk">❓</div>
-          <div class="gen-info"><div class="gen-name lk">???</div></div>
-          <div class="gen-count lk">Нужен<br>ур. 5</div>
-        </div>
-
-      </div>
-      <div class="shop-banner">🎉 ПРОКАЧАЙ НОСТАЛЬГИЮ 🎉</div>
-    </div>
-
-  </div><!-- /content-area -->
-
-  <!-- BOTTOM BANNER (desktop) -->
-  <div class="bottom-banner">🎉 Прокачай ностальгию 🎉</div>
-
-  <!-- MOBILE NAV -->
-  <nav class="mob-nav">
-    <div class="mob-nav-inner">
-      <button class="mob-tab active" id="tabClicker" onclick="switchTab('clicker')">
-        <span class="ti">👟</span>Кликер
+    <!-- Control buttons -->
+    <div class="controls-row">
+      <button class="ctrl-btn" onclick="openNumpad()" title="Mode/Channel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="11" width="18" height="11" rx="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+        <span>Mode</span>
       </button>
-      <button class="mob-tab" id="tabShop" onclick="switchTab('shop')">
-        <span class="ti">🛍️</span>Магазин
+      <button class="ctrl-btn" id="btnDown" onclick="changeFreq(-1)" title="Down">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+        <span>Down</span>
       </button>
-      <button class="mob-tab" onclick="openModal()">
-        <span class="ti">🪙</span>Монеты
+      <button class="ctrl-btn" id="btnUp" onclick="changeFreq(1)" title="Up">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="6 15 12 9 18 15"/>
+        </svg>
+        <span>Up</span>
+      </button>
+      <button class="ctrl-btn" onclick="copyInvite()" title="Invite">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="5" y1="12" x2="19" y2="12"/>
+          <polyline points="12 5 19 12 12 19"/>
+        </svg>
+        <span>Invite</span>
       </button>
     </div>
-  </nav>
+  </div>
 
-</div><!-- /shell -->
+  <div class="divider"></div>
 
-<!-- MODAL -->
-<div class="modal-overlay" id="modal">
-  <div class="modal-box">
-    <h2>💰 Купить монеты</h2>
-    <p>Пополни баланс и получи ×3 по акции!</p>
-    <div class="modal-big">🪙 100 монет</div>
-    <div class="modal-btns">
-      <button class="modal-btn confirm" onclick="buyCoins()">Купить!</button>
-      <button class="modal-btn cancel"  onclick="closeModal()">Отмена</button>
+  <!-- Peers -->
+  <div class="channel-section">
+    <div class="channel-label">CONNECTED USERS</div>
+    <div class="peer-list" id="peerList">
+      <div class="empty-peers">— no connection —</div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Speaker + PTT -->
+  <div class="speaker-area">
+    <div class="speaker-wrapper">
+      <div class="speaker-grille" id="speakerGrille">
+        <!-- Rows generated by JS -->
+      </div>
+      <div class="ptt-overlay-label">PUSH TO TALK</div>
+    </div>
+
+    <button class="ptt-btn" id="pttBtn"
+      onmousedown="startTalk()" onmouseup="stopTalk()"
+      ontouchstart="startTalk(event)" ontouchend="stopTalk(event)">
+      <svg class="ptt-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+        <line x1="12" y1="19" x2="12" y2="23"/>
+        <line x1="8" y1="23" x2="16" y2="23"/>
+      </svg>
+      <span id="pttLabel">TALK</span>
+    </button>
+  </div>
+</div>
+
+<!-- Numpad overlay -->
+<div class="numpad-overlay" id="numpadOverlay" onclick="closeNumpadOutside(event)">
+  <div class="numpad">
+    <div class="numpad-title">ENTER FREQUENCY</div>
+    <div class="numpad-display" id="numpadDisplay">____</div>
+    <div class="numpad-grid">
+      <button class="num-btn" onclick="numPress('1')">1</button>
+      <button class="num-btn" onclick="numPress('2')">2</button>
+      <button class="num-btn" onclick="numPress('3')">3</button>
+      <button class="num-btn" onclick="numPress('4')">4</button>
+      <button class="num-btn" onclick="numPress('5')">5</button>
+      <button class="num-btn" onclick="numPress('6')">6</button>
+      <button class="num-btn" onclick="numPress('7')">7</button>
+      <button class="num-btn" onclick="numPress('8')">8</button>
+      <button class="num-btn" onclick="numPress('9')">9</button>
+      <button class="num-btn del" onclick="numDel()">⌫</button>
+      <button class="num-btn" onclick="numPress('0')">0</button>
+      <button class="num-btn confirm" onclick="numConfirm()">TUNE</button>
     </div>
   </div>
 </div>
 
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
 <script>
-/* ── STATE ── */
-let score = 2301, coins = 0, objLevel = 35;
-let perSecond = 0, clickValue = 1;
-let upgradeThreshold = 3000, boosterActive = null, freeUsed = false;
+// ═══════════════════════════════════════
+//  CLOCK
+// ═══════════════════════════════════════
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+}
+updateClock();
+setInterval(updateClock, 10000);
 
-const gens = [
-  { id:1, name:'Петушок', count:0, baseCost:15,   income:1  },
-  { id:2, name:'Денди',   count:0, baseCost:80,   income:5  },
-];
+// ═══════════════════════════════════════
+//  SPEAKER GRILLE
+// ═══════════════════════════════════════
+const grille = document.getElementById('speakerGrille');
+const rowDots = [5, 6, 7, 7, 7, 6, 5];
+rowDots.forEach(count => {
+  const row = document.createElement('div');
+  row.className = 'grille-row';
+  for (let i = 0; i < count; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'grille-dot';
+    row.appendChild(dot);
+  }
+  grille.appendChild(row);
+});
 
-/* ── FORMAT ── */
-function fmt(n) {
-  if (n >= 1e9) return (n/1e9).toFixed(1)+' млрд';
-  if (n >= 1e6) return (n/1e6).toFixed(1)+' млн';
-  if (n >= 1000) return Math.floor(n).toLocaleString('ru');
-  return Math.floor(n).toString();
+let waveInterval = null;
+function startSpeakerWave() {
+  const dots = grille.querySelectorAll('.grille-dot');
+  let i = 0;
+  waveInterval = setInterval(() => {
+    dots.forEach(d => d.classList.remove('active'));
+    const count = Math.floor(Math.random() * 8) + 4;
+    for (let k = 0; k < count; k++) {
+      const idx = Math.floor(Math.random() * dots.length);
+      dots[idx].classList.add('active');
+    }
+    i++;
+  }, 80);
+}
+function stopSpeakerWave() {
+  clearInterval(waveInterval);
+  grille.querySelectorAll('.grille-dot').forEach(d => d.classList.remove('active'));
 }
 
-/* ── UPDATE UI ── */
-function ui() {
-  document.getElementById('mainScore').textContent = fmt(score);
-  document.getElementById('topScore').textContent  = '⭐ '+fmt(score+3);
-  document.getElementById('coinCount').textContent = coins;
-  document.getElementById('perSec').textContent    = '+'+perSecond;
-  document.getElementById('objLevel').textContent  = objLevel;
+// ═══════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════
+let toastTimeout;
+function showToast(msg, duration = 2500) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => t.classList.remove('show'), duration);
+}
 
-  const prog = Math.min(100, Math.max(0, (score/upgradeThreshold)*100));
-  document.getElementById('progressFill').style.width = prog+'%';
-  const toNext = upgradeThreshold-score;
-  document.getElementById('levelInfo').textContent = toNext > 0
-    ? 'До следующего уровня: '+fmt(toNext)+' ⭐' : '🔥 Готово к апгрейду!';
-  document.getElementById('upgradeBtn').disabled = score < upgradeThreshold;
+// ═══════════════════════════════════════
+//  NUMPAD
+// ═══════════════════════════════════════
+let numBuffer = '';
 
-  gens.forEach(g => {
-    const cost = Math.floor(g.baseCost * Math.pow(1.5, g.count));
-    const costEl = document.getElementById('gen'+g.id+'Cost');
-    const cntEl  = document.getElementById('gen'+g.id+'Count');
-    const itEl   = document.getElementById('gen'+g.id);
-    if (costEl) costEl.textContent = fmt(cost);
-    if (cntEl)  cntEl.textContent  = g.count;
-    if (itEl)   itEl.style.opacity = score >= cost ? '1' : '0.5';
+function openNumpad() {
+  numBuffer = '';
+  updateNumpadDisplay();
+  document.getElementById('numpadOverlay').classList.add('open');
+}
+
+function closeNumpad() {
+  document.getElementById('numpadOverlay').classList.remove('open');
+}
+
+function closeNumpadOutside(e) {
+  if (e.target === document.getElementById('numpadOverlay')) closeNumpad();
+}
+
+function numPress(d) {
+  if (numBuffer.length >= 4) return;
+  numBuffer += d;
+  updateNumpadDisplay();
+  if (numBuffer.length === 4) {
+    setTimeout(numConfirm, 200);
+  }
+}
+
+function numDel() {
+  numBuffer = numBuffer.slice(0, -1);
+  updateNumpadDisplay();
+}
+
+function updateNumpadDisplay() {
+  const disp = numBuffer.padEnd(4, '_');
+  document.getElementById('numpadDisplay').textContent = disp;
+}
+
+function numConfirm() {
+  if (numBuffer.length < 4) { showToast('Enter 4-digit frequency'); return; }
+  closeNumpad();
+  tuneToFrequency(numBuffer);
+}
+
+// ═══════════════════════════════════════
+//  FREQUENCY
+// ═══════════════════════════════════════
+let currentFreq = null;
+
+function changeFreq(delta) {
+  const btn = delta > 0 ? document.getElementById('btnUp') : document.getElementById('btnDown');
+  btn.classList.add('pressed');
+  setTimeout(() => btn.classList.remove('pressed'), 150);
+  
+  let num = parseInt(currentFreq || '1000');
+  num += delta;
+  if (num < 1000) num = 9999;
+  if (num > 9999) num = 1000;
+  tuneToFrequency(String(num));
+}
+
+function tuneToFrequency(freq) {
+  if (freq === currentFreq) return;
+  if (currentFreq !== null) leaveChannel();
+  currentFreq = freq;
+  document.getElementById('freqDisplay').textContent = freq;
+  joinChannel(freq);
+}
+
+function copyInvite() {
+  if (!currentFreq) { showToast('Set frequency first'); return; }
+  const text = `Join me on WalkieTalkie frequency: ${currentFreq}`;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(() => showToast('📋 Invite copied!'));
+  } else {
+    showToast('Freq: ' + currentFreq, 4000);
+  }
+}
+
+// ═══════════════════════════════════════
+//  PEER STATE
+// ═══════════════════════════════════════
+let peer = null;
+let myId = null;
+let connections = {}; // peerId -> DataConnection
+let audioConnections = {}; // peerId -> MediaConnection
+let localStream = null;
+let isTransmitting = false;
+let channelPeers = []; // list of peer ids on our channel
+let speakingPeer = null;
+
+// Generate a stable local user id stored in sessionStorage
+function getMyUserId() {
+  let id = sessionStorage.getItem('wt_uid');
+  if (!id) {
+    id = 'wt_' + Math.random().toString(36).substr(2, 8);
+    sessionStorage.setItem('wt_uid', id);
+  }
+  return id;
+}
+
+// ═══════════════════════════════════════
+//  PEER.JS SETUP
+// ═══════════════════════════════════════
+function initPeer() {
+  if (peer && !peer.destroyed) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    myId = getMyUserId();
+    peer = new Peer(myId, {
+      debug: 0,
+      config: {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' }
+        ]
+      }
+    });
+
+    peer.on('open', id => {
+      myId = id;
+      resolve();
+    });
+
+    peer.on('error', err => {
+      console.warn('Peer error', err);
+      if (err.type === 'unavailable-id') {
+        // regenerate
+        sessionStorage.removeItem('wt_uid');
+        peer.destroy();
+        peer = null;
+        initPeer().then(resolve).catch(reject);
+      }
+    });
+
+    peer.on('connection', conn => handleIncomingDataConn(conn));
+    peer.on('call', call => handleIncomingCall(call));
+  });
+}
+
+// ═══════════════════════════════════════
+//  CHANNEL JOIN / LEAVE
+//  We use a PeerJS "well-known" room peer ID pattern:
+//  The room "coordinator" peer id is `wt_room_XXXX`
+//  When a user joins, they connect to the room coordinator (if it exists),
+//  or become the coordinator themselves.
+//  Coordinator keeps member list and broadcasts to all.
+// ═══════════════════════════════════════
+
+let isCoordinator = false;
+let coordinatorConn = null; // data conn to coordinator (for non-coordinators)
+const MAX_PEERS = 4;
+
+function getRoomId(freq) {
+  return 'wt_room_' + freq;
+}
+
+async function joinChannel(freq) {
+  try {
+    await initPeer();
+    setStatus('SCAN...');
+
+    if (isCoordinator) {
+      // Was coordinator, now leaving old channel
+      leaveChannel();
+      await initPeer();
+    }
+
+    const roomId = getRoomId(freq);
+
+    // Try to connect to existing room coordinator
+    const conn = peer.connect(roomId, { reliable: true, metadata: { type: 'join', userId: myId } });
+
+    conn.on('open', () => {
+      // Successfully connected to coordinator
+      coordinatorConn = conn;
+      isCoordinator = false;
+      setupDataConn(conn, roomId, true);
+      conn.send({ type: 'hello', userId: myId });
+      setStatus('OPEN');
+      showToast('📡 Joined freq ' + freq);
+    });
+
+    conn.on('error', () => {
+      // No coordinator found — become coordinator
+      becomeCoordinator(freq);
+    });
+
+    // Timeout — if no open event, become coordinator
+    setTimeout(() => {
+      if (!coordinatorConn && !isCoordinator) {
+        conn.close();
+        becomeCoordinator(freq);
+      }
+    }, 3000);
+
+  } catch(e) {
+    console.error(e);
+    showToast('Connection error');
+    setStatus('ERR');
+  }
+}
+
+async function becomeCoordinator(freq) {
+  const roomId = getRoomId(freq);
+  // Try to register as the room peer
+  peer.destroy();
+  peer = null;
+  
+  return new Promise((resolve) => {
+    peer = new Peer(roomId, {
+      debug: 0,
+      config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }
+    });
+
+    peer.on('open', id => {
+      myId = id;
+      isCoordinator = true;
+      channelPeers = [myId];
+      setStatus('OPEN');
+      updatePeerList();
+      showToast('📡 Freq ' + freq + ' created');
+      resolve();
+    });
+
+    peer.on('error', err => {
+      if (err.type === 'unavailable-id') {
+        // Someone else became coordinator first, just retry joining
+        peer.destroy();
+        peer = null;
+        myId = getMyUserId();
+        peer = new Peer(myId, { debug: 0 });
+        peer.on('open', () => {
+          joinChannel(freq);
+        });
+        peer.on('connection', conn => handleIncomingDataConn(conn));
+        peer.on('call', call => handleIncomingCall(call));
+      }
+    });
+
+    peer.on('connection', conn => handleIncomingDataConn(conn));
+    peer.on('call', call => handleIncomingCall(call));
+  });
+}
+
+function leaveChannel() {
+  // Close all connections
+  Object.values(connections).forEach(c => { try { c.close(); } catch(e){} });
+  Object.values(audioConnections).forEach(c => { try { c.close(); } catch(e){} });
+  connections = {};
+  audioConnections = {};
+  coordinatorConn = null;
+  isCoordinator = false;
+  channelPeers = [];
+  updatePeerList();
+  setStatus('OFFLINE');
+}
+
+// ═══════════════════════════════════════
+//  DATA CONNECTIONS
+// ═══════════════════════════════════════
+function setupDataConn(conn, peerId, isToCoordinator = false) {
+  connections[peerId] = conn;
+
+  conn.on('data', data => handleMessage(data, peerId));
+
+  conn.on('close', () => {
+    delete connections[peerId];
+    if (isCoordinator) {
+      channelPeers = channelPeers.filter(p => p !== peerId);
+      broadcastPeerList();
+    } else if (peerId === Object.keys(connections).find(k => connections[k] === coordinatorConn)) {
+      // Coordinator left
+      showToast('Channel closed');
+      leaveChannel();
+    }
+    updatePeerList();
+  });
+}
+
+function handleIncomingDataConn(conn) {
+  const peerId = conn.peer;
+
+  conn.on('open', () => {
+    if (isCoordinator) {
+      if (channelPeers.length >= MAX_PEERS) {
+        conn.send({ type: 'full' });
+        conn.close();
+        return;
+      }
+      channelPeers.push(peerId);
+      setupDataConn(conn, peerId, false);
+      // Send current member list
+      conn.send({ type: 'members', peers: channelPeers.filter(p => p !== myId) });
+      // Broadcast updated list to all
+      broadcastPeerList();
+      updatePeerList();
+    } else {
+      setupDataConn(conn, peerId, false);
+    }
   });
 
-  const rank = Math.max(1, 1000 - Math.floor(score/100));
-  document.getElementById('rankDisplay').textContent = 'Вы на '+rank+' месте';
+  conn.on('data', data => handleMessage(data, peerId));
+  conn.on('close', () => {
+    delete connections[peerId];
+    if (isCoordinator) {
+      channelPeers = channelPeers.filter(p => p !== peerId);
+      broadcastPeerList();
+    }
+    updatePeerList();
+  });
 }
 
-/* ── CLICK ── */
-function doClick(cx, cy) {
-  const val = clickValue * (boosterActive === 'percent' ? 2 : 1);
-  score += val;
-  const p = document.createElement('div');
-  p.className = 'click-particle';
-  p.textContent = '+'+val;
-  p.style.cssText = `left:${cx}px;top:${cy-10}px`;
-  document.body.appendChild(p);
-  setTimeout(() => p.remove(), 850);
-  ui();
+function broadcastPeerList() {
+  if (!isCoordinator) return;
+  const others = channelPeers.filter(p => p !== myId);
+  others.forEach(pid => {
+    if (connections[pid]) {
+      connections[pid].send({ type: 'members', peers: channelPeers.filter(p => p !== pid) });
+    }
+  });
+  updatePeerList();
 }
 
-const ring = document.getElementById('clickerRing');
-ring.addEventListener('click', e => doClick(e.clientX, e.clientY));
-ring.addEventListener('touchstart', e => {
-  e.preventDefault();
-  const t = e.touches[0];
-  doClick(t.clientX, t.clientY);
-}, { passive: false });
+function handleMessage(data, fromPeerId) {
+  if (!data || !data.type) return;
 
-/* ── UPGRADE ── */
-function upgrade() {
-  if (score < upgradeThreshold) return;
-  score -= upgradeThreshold;
-  objLevel++;
-  upgradeThreshold = Math.floor(upgradeThreshold * 1.8);
-  clickValue++;
-  if (objLevel >= 3) unlock(3,'🎸','Кассета',  500, 20);
-  if (objLevel >= 5) unlock(4,'📺','Телевизор',2000, 50);
-  flashRing();
-  toast('🎉 Уровень '+objLevel+'! Клик +'+clickValue+' ⭐');
-  ui();
-}
+  switch(data.type) {
+    case 'hello':
+      // Acknowledged by coordinator setup
+      break;
 
-function unlock(slot, icon, name, cost, income) {
-  const el = document.getElementById('gen'+slot);
-  if (!el || !el.classList.contains('locked')) return;
-  el.classList.remove('locked');
-  const bg = slot===3
-    ? 'background:linear-gradient(135deg,#ff2200,#ff6600)'
-    : 'background:linear-gradient(135deg,#0044ff,#00aaff)';
-  el.innerHTML = `
-    <div class="gen-icon" style="${bg};width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:24px;">${icon}</div>
-    <div class="gen-info">
-      <div class="gen-name">${name}</div>
-      <div class="gen-cost">⭐ <span id="gen${slot}Cost">${cost}</span> · +${income}/сек</div>
-    </div>
-    <div class="gen-count" id="gen${slot}Count">0</div>`;
-  gens.push({ id:slot, name, count:0, baseCost:cost, income });
-  el.onclick = () => buyGenerator(slot);
-}
+    case 'members':
+      // We got a member list from coordinator
+      channelPeers = data.peers || [];
+      updatePeerList();
+      break;
 
-/* ── BUY GEN ── */
-function buyGenerator(id) {
-  const g = gens.find(x => x.id === id);
-  if (!g) return;
-  const cost = Math.floor(g.baseCost * Math.pow(1.5, g.count));
-  if (score < cost) { toast('Недостаточно ⭐!'); return; }
-  score -= cost; g.count++; perSecond += g.income;
-  toast('✅ '+g.name+' куплен! +'+g.income+'/сек'); ui();
-}
+    case 'full':
+      showToast('⚠️ Channel full (max 4)');
+      leaveChannel();
+      break;
 
-/* ── BOOSTERS ── */
-function activateBooster(type) {
-  if (type==='quiz') {
-    score += 50; toast('🎲 Бонус: +50 ⭐');
-  } else if (type==='percent') {
-    if (coins < 12000) { toast('Нужно 12 000 🪙!'); return; }
-    coins -= 12000; boosterActive = 'percent';
-    toast('💹 Двойной клик на 30 сек!');
-    setTimeout(() => { boosterActive=null; toast('Бустер закончился'); }, 30000);
-  } else if (type==='up') {
-    if (freeUsed) { toast('Уже использован сегодня!'); return; }
-    freeUsed = true; score += 200; toast('⬆️ Бесплатный бонус: +200 ⭐!');
+    case 'speaking_start':
+      speakingPeer = data.userId;
+      updatePeerSpeaking(data.userId, true);
+      break;
+
+    case 'speaking_stop':
+      speakingPeer = null;
+      updatePeerSpeaking(data.userId, false);
+      break;
   }
-  ui();
 }
 
-/* ── MODAL ── */
-function openModal()  { document.getElementById('modal').classList.add('active'); }
-function closeModal() { document.getElementById('modal').classList.remove('active'); }
-function buyCoins() {
-  coins += 300; closeModal();
-  toast('🪙 +300 монет (акция ×3)!'); ui();
+// ═══════════════════════════════════════
+//  AUDIO (WebRTC via PeerJS)
+// ═══════════════════════════════════════
+async function getLocalStream() {
+  if (localStream) return localStream;
+  try {
+    localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    return localStream;
+  } catch(e) {
+    showToast('🎤 Mic permission denied');
+    throw e;
+  }
 }
 
-/* ── TABS (mobile) ── */
-function switchTab(tab) {
-  const cc = document.getElementById('clickerCol');
-  const sp = document.getElementById('shopPanel');
-  const tc = document.getElementById('tabClicker');
-  const ts = document.getElementById('tabShop');
-  if (tab==='clicker') {
-    cc.classList.add('mob-active');   sp.classList.remove('mob-active');
-    tc.classList.add('active');       ts.classList.remove('active');
+function handleIncomingCall(call) {
+  // Answer with empty stream (we only broadcast when PTT)
+  navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(stream => {
+    // Mute local stream for answer (we control it separately)
+    stream.getAudioTracks().forEach(t => t.enabled = false);
+    call.answer(stream);
+    call.on('stream', remoteStream => {
+      playRemoteStream(remoteStream, call.peer);
+    });
+    audioConnections[call.peer] = call;
+  }).catch(() => {
+    call.answer(); // answer without stream
+    call.on('stream', remoteStream => {
+      playRemoteStream(remoteStream, call.peer);
+    });
+    audioConnections[call.peer] = call;
+  });
+}
+
+function playRemoteStream(stream, peerId) {
+  // Create audio element to play remote stream
+  let audio = document.getElementById('audio_' + peerId);
+  if (!audio) {
+    audio = document.createElement('audio');
+    audio.id = 'audio_' + peerId;
+    audio.autoplay = true;
+    audio.style.display = 'none';
+    document.body.appendChild(audio);
+  }
+  audio.srcObject = stream;
+  
+  // Visual feedback
+  const pttBtn = document.getElementById('pttBtn');
+  pttBtn.classList.add('receiving');
+  document.getElementById('pttLabel').textContent = 'RX...';
+  startSpeakerWave();
+  
+  stream.getAudioTracks().forEach(t => {
+    t.onended = () => {
+      pttBtn.classList.remove('receiving');
+      document.getElementById('pttLabel').textContent = 'TALK';
+      stopSpeakerWave();
+    };
+  });
+}
+
+async function callAllPeers() {
+  const stream = await getLocalStream();
+  stream.getAudioTracks().forEach(t => t.enabled = true);
+  
+  const targets = isCoordinator 
+    ? channelPeers.filter(p => p !== myId)
+    : channelPeers;
+
+  targets.forEach(pid => {
+    if (audioConnections[pid]) {
+      // Already have a call, enable stream tracks
+      return;
+    }
+    const call = peer.call(pid, stream);
+    if (call) {
+      audioConnections[pid] = call;
+      call.on('stream', remoteStream => {
+        // Ignore their stream while we talk
+      });
+      call.on('close', () => delete audioConnections[pid]);
+    }
+  });
+}
+
+function muteLocalStream() {
+  if (localStream) {
+    localStream.getAudioTracks().forEach(t => t.enabled = false);
+  }
+}
+
+// Broadcast speaking state to all
+function broadcastSpeaking(isSpeaking) {
+  const msg = { type: isSpeaking ? 'speaking_start' : 'speaking_stop', userId: myId };
+  
+  if (isCoordinator) {
+    const others = channelPeers.filter(p => p !== myId);
+    others.forEach(pid => connections[pid]?.send(msg));
+  } else if (coordinatorConn) {
+    coordinatorConn.send(msg);
+    // Coordinator should relay, but for simplicity just direct
+    Object.values(connections).forEach(c => { try { c.send(msg); } catch(e){} });
+  }
+}
+
+// ═══════════════════════════════════════
+//  PTT
+// ═══════════════════════════════════════
+async function startTalk(e) {
+  if (e) e.preventDefault();
+  if (!currentFreq) { showToast('Select frequency first'); return; }
+  if (isTransmitting) return;
+  if (speakingPeer && speakingPeer !== myId) { showToast('⚡ Channel busy'); return; }
+
+  isTransmitting = true;
+  const btn = document.getElementById('pttBtn');
+  btn.classList.add('transmitting');
+  document.getElementById('pttLabel').textContent = 'TX...';
+  startSpeakerWave();
+
+  try {
+    await callAllPeers();
+    broadcastSpeaking(true);
+  } catch(err) {
+    console.warn(err);
+    isTransmitting = false;
+    btn.classList.remove('transmitting');
+    document.getElementById('pttLabel').textContent = 'TALK';
+    stopSpeakerWave();
+  }
+}
+
+function stopTalk(e) {
+  if (e) e.preventDefault();
+  if (!isTransmitting) return;
+
+  isTransmitting = false;
+  muteLocalStream();
+  broadcastSpeaking(false);
+
+  const btn = document.getElementById('pttBtn');
+  btn.classList.remove('transmitting');
+  document.getElementById('pttLabel').textContent = 'TALK';
+  stopSpeakerWave();
+}
+
+// ═══════════════════════════════════════
+//  UI UPDATES
+// ═══════════════════════════════════════
+function setStatus(text) {
+  const el = document.getElementById('statusLabel');
+  el.textContent = text;
+  el.className = 'lcd-status' + (text === 'OPEN' ? ' active' : '');
+}
+
+function updatePeerList() {
+  const list = document.getElementById('peerList');
+  const allPeers = isCoordinator 
+    ? channelPeers.filter(p => p !== myId)
+    : channelPeers;
+
+  document.getElementById('peerCount').textContent = allPeers.length + (isCoordinator ? 1 : 0);
+
+  if (allPeers.length === 0) {
+    list.innerHTML = '<div class="empty-peers">— waiting for others —</div>';
+    return;
+  }
+
+  list.innerHTML = allPeers.map(pid => {
+    const shortId = pid.split('_').pop() || pid.substr(-6);
+    const isSpeaking = speakingPeer === pid;
+    return `<div class="peer-item ${isSpeaking ? 'speaking' : ''}" id="peer_${pid}">
+      <div class="peer-dot"></div>
+      <span>USER-${shortId.toUpperCase()}</span>
+    </div>`;
+  }).join('');
+}
+
+function updatePeerSpeaking(userId, isSpeaking) {
+  const el = document.getElementById('peer_' + userId);
+  if (el) {
+    if (isSpeaking) el.classList.add('speaking');
+    else el.classList.remove('speaking');
+  }
+
+  const pttBtn = document.getElementById('pttBtn');
+  if (isSpeaking && userId !== myId) {
+    pttBtn.classList.add('receiving');
+    document.getElementById('pttLabel').textContent = 'RX...';
+    startSpeakerWave();
+  } else if (!isSpeaking && !isTransmitting) {
+    pttBtn.classList.remove('receiving');
+    document.getElementById('pttLabel').textContent = 'TALK';
+    stopSpeakerWave();
+  }
+}
+
+// ═══════════════════════════════════════
+//  MISC
+// ═══════════════════════════════════════
+document.getElementById('powerBtn').addEventListener('click', () => {
+  if (currentFreq) {
+    leaveChannel();
+    currentFreq = null;
+    document.getElementById('freqDisplay').textContent = '----';
+    document.getElementById('peerCount').textContent = '0';
+    showToast('📴 Radio off');
   } else {
-    sp.classList.add('mob-active');   cc.classList.remove('mob-active');
-    ts.classList.add('active');       tc.classList.remove('active');
+    showToast('Set a frequency to turn on');
+  }
+});
+
+// Prevent default touch behavior on PTT
+document.getElementById('pttBtn').addEventListener('touchstart', e => e.preventDefault(), { passive: false });
+document.getElementById('pttBtn').addEventListener('touchend', e => e.preventDefault(), { passive: false });
+
+// Check URL for frequency param (for invite links)
+window.addEventListener('load', () => {
+  const params = new URLSearchParams(window.location.search);
+  const freq = params.get('freq');
+  if (freq && /^\d{4}$/.test(freq)) {
+    setTimeout(() => tuneToFrequency(freq), 500);
+  }
+});
+
+// Make invite include freq
+function copyInvite() {
+  if (!currentFreq) { showToast('Set frequency first'); return; }
+  const url = window.location.href.split('?')[0] + '?freq=' + currentFreq;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(() => showToast('📋 Invite link copied!'));
+  } else {
+    showToast('Freq: ' + currentFreq, 4000);
   }
 }
-
-/* ── FLASH RING ── */
-function flashRing() {
-  ring.style.transform='scale(1.07)'; ring.style.filter='brightness(1.4)';
-  setTimeout(()=>{ ring.style.transform=''; ring.style.filter=''; }, 200);
-}
-
-/* ── TOAST ── */
-function toast(msg) {
-  const t = document.createElement('div');
-  t.style.cssText=`
-    position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
-    background:rgba(10,0,30,.92);color:var(--yellow);
-    padding:9px 18px;border-radius:12px;white-space:nowrap;
-    font-family:'Russo One',sans-serif;font-size:13px;
-    z-index:9998;border:2px solid rgba(255,215,0,.45);
-    animation:flyup .35s ease;
-  `;
-  t.textContent=msg;
-  document.body.appendChild(t);
-  setTimeout(()=>t.remove(),2400);
-}
-
-/* ── PASSIVE INCOME ── */
-setInterval(()=>{ if(perSecond>0){ score+=perSecond; ui(); } }, 1000);
-
-ui();
 </script>
 </body>
 </html>
